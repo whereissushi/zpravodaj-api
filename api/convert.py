@@ -6,14 +6,14 @@ POST /api/convert
 import json
 import sys
 import os
+import io
+import zipfile
 from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from lib.pdf_converter import PDFToFlipbook
-from lib.s3_uploader import S3Uploader
-from lib.db import log_conversion
 
 # For local development
 try:
@@ -29,12 +29,11 @@ def handler(request):
 
     Expected request body (multipart/form-data):
     - pdf: PDF file
-    - title: Title for flipbook
-    - account: Account identifier (for organization)
-    - upload_to_s3: boolean (default: true)
+    - title: Title for flipbook (optional)
+    - account: Account identifier (optional)
 
     Returns:
-    - JSON with S3 URLs or ZIP download link
+    - ZIP file with complete flipbook
     """
     if request.method != 'POST':
         return {
@@ -58,7 +57,6 @@ def handler(request):
         pdf_file = request.files.get('pdf')
         title = request.form.get('title', 'Zpravodaj')
         account = request.form.get('account', 'default')
-        upload_to_s3 = request.form.get('upload_to_s3', 'true').lower() == 'true'
 
         if not pdf_file:
             return {
@@ -74,92 +72,50 @@ def handler(request):
         converter = PDFToFlipbook(pdf_bytes, title)
         result = converter.convert()
 
-        # Upload to S3 or return data
-        if upload_to_s3:
-            # Get S3 credentials from environment
-            s3_bucket = os.getenv('AWS_S3_BUCKET')
-            s3_region = os.getenv('AWS_REGION', 'us-east-1')
+        # Create ZIP file in memory
+        zip_buffer = io.BytesIO()
 
-            if not s3_bucket:
-                return {
-                    'statusCode': 500,
-                    'headers': {'Content-Type': 'application/json'},
-                    'body': json.dumps({'error': 'S3 bucket not configured'})
-                }
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            # Add HTML
+            zip_file.writestr('index.html', result['html'])
 
-            # Upload to S3
-            uploader = S3Uploader(
-                bucket_name=s3_bucket,
-                region=s3_region
-            )
+            # Add CSS
+            zip_file.writestr('css/style.css', result['css'])
 
-            # Generate unique folder name (account/title-timestamp)
-            import time
-            timestamp = int(time.time())
-            folder_name = f"{account}/{title.replace(' ', '-').lower()}-{timestamp}"
+            # Add JS
+            zip_file.writestr('js/flipbook.js', result['js'])
 
-            s3_urls = uploader.upload_flipbook(result, folder_name)
+            # Add page images
+            for i, page_bytes in enumerate(result['pages'], start=1):
+                zip_file.writestr(f'files/pages/{i}.jpg', page_bytes)
 
-            # Log to database
-            try:
-                log_conversion(
-                    account=account,
-                    title=title,
-                    page_count=result['page_count'],
-                    s3_url=s3_urls['index_url'],
-                    status='success'
-                )
-            except Exception as db_error:
-                print(f"Warning: Failed to log to database: {db_error}")
+            # Add thumbnails
+            for i, thumb_bytes in enumerate(result['thumbs'], start=1):
+                zip_file.writestr(f'files/thumb/{i}.jpg', thumb_bytes)
 
-            return {
-                'statusCode': 200,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({
-                    'success': True,
-                    'urls': s3_urls,
-                    'page_count': result['page_count']
-                })
-            }
-        else:
-            # Return as JSON (base64 encoded)
-            import base64
+        # Get ZIP bytes
+        zip_buffer.seek(0)
+        zip_bytes = zip_buffer.read()
 
-            # Encode images as base64
-            pages_b64 = [base64.b64encode(img).decode('utf-8') for img in result['pages']]
-            thumbs_b64 = [base64.b64encode(img).decode('utf-8') for img in result['thumbs']]
+        # Generate filename
+        safe_title = title.replace(' ', '-').replace('/', '-').lower()
+        filename = f"{safe_title}-flipbook.zip"
 
-            return {
-                'statusCode': 200,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({
-                    'success': True,
-                    'html': result['html'],
-                    'css': result['css'],
-                    'js': result['js'],
-                    'pages': pages_b64,
-                    'thumbs': thumbs_b64,
-                    'page_count': result['page_count']
-                })
-            }
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/zip',
+                'Content-Disposition': f'attachment; filename="{filename}"',
+                'Content-Length': str(len(zip_bytes))
+            },
+            'body': zip_bytes,
+            'isBase64Encoded': False
+        }
 
     except Exception as e:
         import traceback
         error_trace = traceback.format_exc()
         print(f"Error: {error_trace}")
-
-        # Log error to database
-        try:
-            log_conversion(
-                account=account if 'account' in locals() else 'unknown',
-                title=title if 'title' in locals() else 'unknown',
-                page_count=0,
-                s3_url='',
-                status='error',
-                error_message=str(e)
-            )
-        except:
-            pass
 
         return {
             'statusCode': 500,
