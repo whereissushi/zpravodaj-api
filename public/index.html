@@ -251,7 +251,7 @@
             <div class="upload-area" id="uploadArea">
                 <div class="upload-icon">📄</div>
                 <div class="upload-text">Klikněte nebo přetáhněte PDF</div>
-                <div class="upload-hint">Maximální velikost: 4 MB</div>
+                <div class="upload-hint">Maximální velikost: 50 MB</div>
                 <input type="file" id="pdfFile" accept=".pdf" required>
             </div>
 
@@ -355,9 +355,9 @@
                 return;
             }
 
-            // Check file size (4 MB limit - Vercel restriction)
-            if (file.size > 4 * 1024 * 1024) {
-                showError('Soubor je příliš velký. Maximální velikost je 4 MB (Vercel limit). Pro větší soubory použijte API přímo nebo kontaktujte podporu.');
+            // Check file size (50 MB limit)
+            if (file.size > 50 * 1024 * 1024) {
+                showError('Soubor je příliš velký. Maximální velikost je 50 MB.');
                 return;
             }
 
