@@ -97,10 +97,11 @@
 
         .subtitle {
             text-align: center;
-            color: rgba(148, 163, 184, 0.9);
+            color: rgba(203, 213, 225, 0.7);
             margin-bottom: 40px;
             font-size: 15px;
             font-weight: 400;
+            letter-spacing: 0.2px;
         }
 
         .upload-area {
@@ -145,21 +146,31 @@
         }
 
         .upload-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-            filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 20px;
+            color: rgba(148, 163, 184, 0.7);
+            stroke-width: 1.5;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover .upload-icon {
+            color: rgba(59, 130, 246, 0.9);
+            transform: translateY(-4px);
         }
 
         .upload-text {
-            font-size: 18px;
-            color: rgba(148, 163, 184, 1);
-            font-weight: 600;
+            font-size: 16px;
+            color: rgba(203, 213, 225, 0.9);
+            font-weight: 500;
             margin-bottom: 10px;
+            letter-spacing: 0.3px;
         }
 
         .upload-hint {
             font-size: 13px;
             color: rgba(148, 163, 184, 0.6);
+            font-weight: 400;
         }
 
         input[type="file"] {
@@ -173,7 +184,7 @@
         label {
             display: block;
             font-weight: 500;
-            color: rgba(148, 163, 184, 1);
+            color: rgba(203, 213, 225, 0.8);
             margin-bottom: 8px;
             font-size: 14px;
             letter-spacing: 0.3px;
@@ -294,14 +305,14 @@
         }
 
         .loading-text {
-            color: rgba(148, 163, 184, 1);
+            color: rgba(203, 213, 225, 0.9);
             font-weight: 600;
             font-size: 18px;
             margin-bottom: 10px;
         }
 
         .loading-hint {
-            color: rgba(148, 163, 184, 0.6);
+            color: rgba(148, 163, 184, 0.7);
             font-size: 14px;
         }
 
@@ -357,12 +368,16 @@
 </head>
 <body>
     <div class="container">
-        <h1>📖 Zpravodaj Converter</h1>
+        <h1>Zpravodaj Converter</h1>
         <p class="subtitle">Převeďte PDF zpravodaj na interaktivní HTML flipbook</p>
 
         <form id="uploadForm">
             <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">📄</div>
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
                 <div class="upload-text">Klikněte nebo přetáhněte PDF</div>
                 <div class="upload-hint">Maximální velikost: 50 MB</div>
                 <input type="file" id="pdfFile" accept=".pdf" required>
@@ -395,7 +410,10 @@
         </div>
 
         <div class="success" id="success">
-            ✅ Hotovo! Flipbook se právě stahuje...
+            <svg style="width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 8px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Hotovo! Flipbook se právě stahuje...
         </div>
 
         <div class="error" id="error"></div>
