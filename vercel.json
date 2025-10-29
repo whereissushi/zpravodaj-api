@@ -1,34 +1,6 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/convert.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/init-db.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/convert",
-      "dest": "api/convert.py"
-    },
-    {
-      "src": "/api/init-db",
-      "dest": "api/init-db.py"
-    },
-    {
-      "src": "/",
-      "dest": "public/index.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "public/$1"
-    }
-  ],
-  "env": {
-    "PYTHONPATH": "/var/task"
-  }
+  "rewrites": [
+    { "source": "/api/convert", "destination": "/api/index" },
+    { "source": "/(.*)", "destination": "/public/$1" }
+  ]
 }
