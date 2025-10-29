@@ -1,4 +1,10 @@
 {
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60,
+      "memory": 3008
+    }
+  },
   "rewrites": [
     { "source": "/api/convert", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/public/$1" }
