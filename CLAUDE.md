@@ -31,20 +31,20 @@ The `PDFToFlipbook` class in `lib/pdf_converter.py` handles the entire conversio
    - Full-size: 150 DPI, 85% quality
    - Thumbnails: 200x300px, 75% quality
 2. **HTML Generation**: Creates self-contained static flipbook with:
-   - `index.html`: Main viewer (inline page count, embedded JS)
-   - `css/style.css`: Complete styling (glassmorphism dark theme)
-   - `js/flipbook.js`: Vanilla JS flipbook logic (no external dependencies)
+   - `index.html`: Main viewer with turn.js integration
+   - `css/style.css`: Complete styling (blue toolbar #2563a6, light background #e8e8e8)
+   - `js/flipbook.js`: jQuery + turn.js-based flipbook with drag-to-flip
 
-**Important**: All HTML/CSS/JS is generated as strings in memory - the flipbook is completely standalone with no external CDN dependencies.
+**Important**: All HTML/CSS/JS is generated as strings in memory. The flipbook uses CDN dependencies (jQuery, turn.js, Font Awesome) for enhanced interactivity.
 
 ### Output Format
 
 API returns a ZIP file containing:
 ```
 flipbook.zip
-├── index.html          # Main flipbook viewer
-├── css/style.css       # Styling (glassmorphism design)
-├── js/flipbook.js      # Flipbook interaction logic
+├── index.html          # Main flipbook viewer with turn.js
+├── css/style.css       # Styling (blue toolbar, light background)
+├── js/flipbook.js      # Flipbook interaction logic (jQuery + turn.js)
 └── files/
     ├── pages/          # Full-resolution JPEGs (1.jpg, 2.jpg, ...)
     └── thumb/          # Thumbnail JPEGs (1.jpg, 2.jpg, ...)
@@ -113,7 +113,15 @@ Originally designed for S3 upload (`lib/s3_uploader.py`), but changed to ZIP dow
 1. Setting environment variables (AWS_S3_BUCKET, DATABASE_URL)
 2. Modifying `app.py` to use S3Uploader instead of ZIP response
 
-### Frontend Design
+### Flipbook Design (Generated Output)
+
+The generated flipbook (`index.html` in ZIP) uses:
+- **Turn.js library** - Realistic page-flip animations with drag-to-flip
+- **Blue toolbar design** - Matches Munipolis style (#2563a6 toolbar, #e8e8e8 background)
+- **CDN dependencies** - jQuery 3.6.0, turn.js 3.0, Font Awesome 6.4.0
+- **Google Analytics** - Tracks page_turn events (requires GA ID replacement)
+
+### Frontend Upload UI
 
 The web UI (`public/index.html`) uses:
 - **Glassmorphism design** - Professional dark theme with blur effects
@@ -152,11 +160,32 @@ This is normal - subsequent builds use cache and are faster (~2-3 minutes).
 ## Generated Flipbook Features
 
 The output HTML flipbook includes:
+- **Drag-to-flip**: Realistic page turning by dragging pages (turn.js)
+- **Zoom-on-click**: Click anywhere on page to zoom 2x to that point, click again to reset
+- **Sound effects**: Page flip sound with toggle button (base64 WAV embedded)
+- **Share button**: Web Share API with clipboard fallback
 - **Navigation**: Arrow buttons, keyboard shortcuts (←/→, PageUp/PageDown, Space, Home/End)
-- **Mobile support**: Touch swipe gestures, responsive layout
-- **Page thumbnails**: Clickable preview bar with auto-scroll
-- **Double-page spread**: Desktop shows two pages side-by-side (book-like)
-- **Single-page mode**: Mobile displays one page at a time
-- **Page flip animation**: 3D rotation effect when turning pages
+- **Page thumbnails**: Clickable preview bar with auto-scroll to active page
+- **Fullscreen mode**: Toggle fullscreen viewing
+- **Mobile responsive**: Single page on mobile (<768px), double spread on desktop
+- **Google Analytics**: Page turn event tracking (requires GA ID configuration)
 
-All flipbook logic is self-contained with zero external dependencies.
+**Important**: The flipbook depends on CDN resources (jQuery, turn.js, Font Awesome). Ensure internet connectivity for full functionality.
+
+## Modifying Generated Flipbook
+
+All HTML/CSS/JS for the generated flipbook is embedded as Python strings in `lib/pdf_converter.py`:
+
+- **HTML structure**: `_generate_html()` method (lines ~80-150)
+- **CSS styling**: `_get_css()` method (lines ~160-360)
+- **JavaScript logic**: `_get_js()` method (lines ~363-567)
+
+**Critical**: When modifying these strings:
+1. Use triple-quoted strings (`'''`) for multiline content
+2. Escape curly braces: `{{` and `}}` for literal braces in f-strings
+3. Use f-string interpolation for dynamic values (e.g., `{page_count}`)
+4. Test output by running a conversion and inspecting the generated `index.html`
+
+**Google Analytics Setup**: Replace `G-XXXXXXXXXX` in `_generate_html()` with actual GA tracking ID.
+
+**Design Reference**: Current design matches Munipolis flipbook style (blue toolbar #2563a6, light background #e8e8e8). See commit "Complete turn.js implementation with drag-to-flip" for full implementation details.
