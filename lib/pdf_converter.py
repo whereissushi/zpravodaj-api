@@ -87,14 +87,44 @@ class PDFToFlipbook:
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>{self.title}</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div id="flipbook-container">
-        <div id="flipbook-header">
-            <h1>{self.title}</h1>
+        <!-- Modrý toolbar -->
+        <div id="flipbook-toolbar">
+            <button id="zoom-in-btn" class="toolbar-btn" title="Přiblížit">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button id="zoom-out-btn" class="toolbar-btn" title="Oddálit">
+                <i class="fas fa-minus"></i>
+            </button>
+            <button id="rotate-left-btn" class="toolbar-btn" title="Otočit doleva">
+                <i class="fas fa-rotate-left"></i>
+            </button>
+            <button id="prev-page-btn" class="toolbar-btn" title="Předchozí">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button id="next-page-btn" class="toolbar-btn" title="Další">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+
             <div id="page-info">
-                <span id="current-page">1</span> / <span id="total-pages">{page_count}</span>
+                <span id="current-page">1</span> / {page_count}
             </div>
+
+            <button id="first-page-btn" class="toolbar-btn" title="První stránka">
+                <i class="fas fa-backward-step"></i>
+            </button>
+            <button id="last-page-btn" class="toolbar-btn" title="Poslední stránka">
+                <i class="fas fa-forward-step"></i>
+            </button>
+            <button id="rotate-right-btn" class="toolbar-btn" title="Otočit doprava">
+                <i class="fas fa-rotate-right"></i>
+            </button>
+            <button id="fullscreen-btn" class="toolbar-btn" title="Celá obrazovka">
+                <i class="fas fa-expand"></i>
+            </button>
         </div>
 
         <div id="flipbook-viewer">
@@ -105,11 +135,6 @@ class PDFToFlipbook:
             </div>
 
             <button id="next-btn" class="nav-btn" aria-label="Další stránka">›</button>
-        </div>
-
-        <div id="flipbook-controls">
-            <button id="first-page-btn" title="První stránka">⏮</button>
-            <button id="last-page-btn" title="Poslední stránka">⏭</button>
         </div>
 
         <div id="thumbnail-bar">
@@ -136,8 +161,8 @@ class PDFToFlipbook:
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background: #2a2a2a;
-    color: #fff;
+    background: #e8e8e8;
+    color: #333;
     overflow: hidden;
     height: 100vh;
 }
@@ -148,27 +173,48 @@ body {
     height: 100vh;
 }
 
-#flipbook-header {
-    background: #1a1a1a;
-    padding: 15px 20px;
+/* Modrý toolbar inspirovaný Munipolis */
+#flipbook-toolbar {
+    background: #2563a6;
+    padding: 8px 15px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid #3a3a3a;
+    gap: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 100;
 }
 
-#flipbook-header h1 {
-    font-size: 20px;
-    font-weight: 500;
+.toolbar-btn {
+    background: transparent;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 16px;
+    transition: background 0.2s;
+}
+
+.toolbar-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.toolbar-btn:active {
+    background: rgba(255, 255, 255, 0.25);
 }
 
 #page-info {
-    font-size: 16px;
-    color: #888;
+    background: white;
+    color: #333;
+    padding: 4px 12px;
+    border-radius: 3px;
+    font-size: 14px;
+    margin: 0 10px;
+    min-width: 60px;
+    text-align: center;
 }
 
 #current-page {
-    color: #fff;
     font-weight: 600;
 }
 
@@ -178,46 +224,48 @@ body {
     align-items: center;
     justify-content: center;
     position: relative;
-    overflow: hidden;
-    background: #2a2a2a;
+    overflow: auto;
+    background: #e8e8e8;
     perspective: 1500px;
+    padding: 20px;
 }
 
 #page-container {
-    max-width: 95%;
-    max-height: 90%;
+    max-width: 1400px;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0;
+    gap: 2px;
     transform-style: preserve-3d;
     position: relative;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    padding: 0;
 }
 
 .page-spread {
     position: relative;
-    width: auto;
-    height: 100%;
-    max-height: 100%;
-    box-shadow: 0 5px 30px rgba(0,0,0,0.8);
+    width: 50%;
+    height: auto;
+    background: white;
 }
 
 .page-spread img {
-    width: auto;
-    height: 100%;
-    max-height: calc(100vh - 250px);
+    width: 100%;
+    height: auto;
     display: block;
     object-fit: contain;
 }
 
 .page-left {
     transform-origin: right center;
-    border-right: 1px solid #1a1a1a;
+    border-right: 1px solid #ddd;
 }
 
 .page-right {
     transform-origin: left center;
-    border-left: 1px solid #1a1a1a;
+    border-left: 1px solid #ddd;
 }
 
 .page-right.page-turning-next {
@@ -291,12 +339,13 @@ body {
 }
 
 .page-single {
-    width: auto;
-    height: 100%;
+    width: 100%;
+    height: auto;
 }
 
 .page-single img {
-    max-height: calc(100vh - 200px);
+    width: 100%;
+    height: auto;
 }
 
 #current-page-img {
@@ -307,7 +356,7 @@ body {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(37, 99, 166, 0.7);
     color: white;
     border: none;
     font-size: 48px;
@@ -316,10 +365,11 @@ body {
     z-index: 10;
     transition: background 0.3s;
     line-height: 1;
+    border-radius: 4px;
 }
 
 .nav-btn:hover {
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(37, 99, 166, 0.9);
 }
 
 .nav-btn:disabled {
@@ -335,36 +385,12 @@ body {
     right: 10px;
 }
 
-#flipbook-controls {
-    background: #1a1a1a;
-    padding: 10px;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    border-top: 1px solid #3a3a3a;
-}
-
-#flipbook-controls button {
-    background: #3a3a3a;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    border-radius: 4px;
-    font-size: 16px;
-    transition: background 0.3s;
-}
-
-#flipbook-controls button:hover {
-    background: #4a4a4a;
-}
-
 #thumbnail-bar {
-    background: #1a1a1a;
+    background: #f5f5f5;
     padding: 10px;
     overflow-x: auto;
     overflow-y: hidden;
-    border-top: 2px solid #3a3a3a;
+    border-top: 1px solid #ddd;
 }
 
 #thumbnail-container {
@@ -378,33 +404,33 @@ body {
     cursor: pointer;
     border: 3px solid transparent;
     transition: border-color 0.3s, transform 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .thumbnail:hover {
     transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .thumbnail.active {
-    border-color: #0066cc;
+    border-color: #2563a6;
+    box-shadow: 0 4px 8px rgba(37, 99, 166, 0.3);
 }
 
 @media (max-width: 768px) {
-    #flipbook-header h1 {
-        font-size: 16px;
+    .toolbar-btn {
+        padding: 6px 10px;
+        font-size: 14px;
     }
 
     #page-info {
-        font-size: 14px;
+        font-size: 12px;
+        padding: 3px 8px;
     }
 
     .nav-btn {
         font-size: 32px;
         padding: 15px 10px;
-    }
-
-    #flipbook-controls button {
-        padding: 8px 12px;
-        font-size: 14px;
     }
 
     .thumbnail {
@@ -413,17 +439,11 @@ body {
 
     #page-container {
         gap: 0;
+        max-width: 100%;
     }
 
     .page-spread {
-        width: 90%;
-        height: auto;
-    }
-
-    .page-spread img {
         width: 100%;
-        height: auto;
-        max-height: calc(100vh - 220px);
     }
 
     .page-left + .page-right {
@@ -454,6 +474,8 @@ body {
         return '''let currentSpread = 0;
 let isAnimating = false;
 const isMobile = window.innerWidth <= 768;
+let zoomLevel = 1;
+let rotationAngle = 0;
 
 const pageContainer = document.getElementById('page-container');
 const currentPageSpan = document.getElementById('current-page');
@@ -461,7 +483,16 @@ const prevBtn = document.getElementById('prev-btn');
 const nextBtn = document.getElementById('next-btn');
 const firstPageBtn = document.getElementById('first-page-btn');
 const lastPageBtn = document.getElementById('last-page-btn');
+const prevPageBtn = document.getElementById('prev-page-btn');
+const nextPageBtn = document.getElementById('next-page-btn');
 const thumbnails = document.querySelectorAll('.thumbnail');
+
+// Toolbar buttons
+const zoomInBtn = document.getElementById('zoom-in-btn');
+const zoomOutBtn = document.getElementById('zoom-out-btn');
+const rotateLeftBtn = document.getElementById('rotate-left-btn');
+const rotateRightBtn = document.getElementById('rotate-right-btn');
+const fullscreenBtn = document.getElementById('fullscreen-btn');
 
 function loadSpread(spreadNum, direction = 'none') {
     if (isAnimating) return;
@@ -553,10 +584,53 @@ function lastPage() {
     }
 }
 
+// Zoom functions
+function zoomIn() {
+    zoomLevel = Math.min(zoomLevel + 0.25, 3);
+    pageContainer.style.transform = `scale(${zoomLevel}) rotate(${rotationAngle}deg)`;
+}
+
+function zoomOut() {
+    zoomLevel = Math.max(zoomLevel - 0.25, 0.5);
+    pageContainer.style.transform = `scale(${zoomLevel}) rotate(${rotationAngle}deg)`;
+}
+
+// Rotation functions
+function rotateLeft() {
+    rotationAngle -= 90;
+    pageContainer.style.transform = `scale(${zoomLevel}) rotate(${rotationAngle}deg)`;
+}
+
+function rotateRight() {
+    rotationAngle += 90;
+    pageContainer.style.transform = `scale(${zoomLevel}) rotate(${rotationAngle}deg)`;
+}
+
+// Fullscreen toggle
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+        fullscreenBtn.querySelector('i').className = 'fas fa-compress';
+    } else {
+        document.exitFullscreen();
+        fullscreenBtn.querySelector('i').className = 'fas fa-expand';
+    }
+}
+
+// Event listeners - navigation
 prevBtn.addEventListener('click', prevPage);
 nextBtn.addEventListener('click', nextPage);
 firstPageBtn.addEventListener('click', firstPage);
 lastPageBtn.addEventListener('click', lastPage);
+prevPageBtn.addEventListener('click', prevPage);
+nextPageBtn.addEventListener('click', nextPage);
+
+// Event listeners - toolbar
+zoomInBtn.addEventListener('click', zoomIn);
+zoomOutBtn.addEventListener('click', zoomOut);
+rotateLeftBtn.addEventListener('click', rotateLeft);
+rotateRightBtn.addEventListener('click', rotateRight);
+fullscreenBtn.addEventListener('click', toggleFullscreen);
 
 thumbnails.forEach(thumb => {
     thumb.addEventListener('click', () => {
