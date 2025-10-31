@@ -88,7 +88,17 @@ class PDFToFlipbook:
     <title>{self.title}</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Version: 2.0 - Blue Toolbar Design - 2025-10-31 -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js"></script>
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){{dataLayer.push(arguments);}}
+        gtag('js', new Date());
+        gtag('config', 'G-XXXXXXXXXX');
+    </script>
+    <!-- Version: 3.0 - Turn.js with Drag-to-Flip - 2025-10-31 -->
 </head>
 <body>
     <div id="flipbook-container">
@@ -100,8 +110,8 @@ class PDFToFlipbook:
             <button id="zoom-out-btn" class="toolbar-btn" title="Oddálit">
                 <i class="fas fa-minus"></i>
             </button>
-            <button id="rotate-left-btn" class="toolbar-btn" title="Otočit doleva">
-                <i class="fas fa-rotate-left"></i>
+            <button id="sound-btn" class="toolbar-btn" title="Zvuk">
+                <i class="fas fa-volume-up"></i>
             </button>
             <button id="prev-page-btn" class="toolbar-btn" title="Předchozí">
                 <i class="fas fa-chevron-left"></i>
@@ -120,8 +130,8 @@ class PDFToFlipbook:
             <button id="last-page-btn" class="toolbar-btn" title="Poslední stránka">
                 <i class="fas fa-forward-step"></i>
             </button>
-            <button id="rotate-right-btn" class="toolbar-btn" title="Otočit doprava">
-                <i class="fas fa-rotate-right"></i>
+            <button id="share-btn" class="toolbar-btn" title="Sdílet">
+                <i class="fas fa-share-alt"></i>
             </button>
             <button id="fullscreen-btn" class="toolbar-btn" title="Celá obrazovka">
                 <i class="fas fa-expand"></i>
@@ -129,13 +139,9 @@ class PDFToFlipbook:
         </div>
 
         <div id="flipbook-viewer">
-            <button id="prev-btn" class="nav-btn" aria-label="Předchozí stránka">‹</button>
-
-            <div id="page-container">
-                <!-- Pages loaded dynamically by JavaScript -->
+            <div id="flipbook">
+                {''.join(f'<div class="page"><img src="files/pages/{i}.jpg" alt="Stránka {i}"></div>' for i in range(1, page_count + 1))}
             </div>
-
-            <button id="next-btn" class="nav-btn" aria-label="Další stránka">›</button>
         </div>
 
         <div id="thumbnail-bar">
@@ -225,165 +231,57 @@ body {
     align-items: center;
     justify-content: center;
     position: relative;
-    overflow: auto;
+    overflow: hidden;
     background: #e8e8e8;
-    perspective: 1500px;
     padding: 20px;
 }
 
-#page-container {
-    max-width: 1400px;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    transform-style: preserve-3d;
-    position: relative;
-    background: white;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    padding: 0;
+#flipbook {
+    width: 80%;
+    height: 85vh;
+    margin: 0 auto;
 }
 
-.page-spread {
-    position: relative;
+#flipbook .page {
     width: 50%;
-    height: auto;
-    background: white;
+    height: 100%;
+    background-color: white;
+    background-size: 100% 100%;
 }
 
-.page-spread img {
+#flipbook .page img {
     width: 100%;
-    height: auto;
-    display: block;
+    height: 100%;
     object-fit: contain;
 }
 
-.page-left {
-    transform-origin: right center;
-    border-right: 1px solid #ddd;
-}
-
-.page-right {
-    transform-origin: left center;
-    border-left: 1px solid #ddd;
-}
-
-.page-right.page-turning-next {
-    animation: pageFlipRight 0.7s cubic-bezier(0.645, 0.045, 0.355, 1);
-    z-index: 10;
-}
-
-.page-left.page-turning-prev {
-    animation: pageFlipLeft 0.7s cubic-bezier(0.645, 0.045, 0.355, 1);
-    z-index: 10;
-}
-
-@keyframes pageFlipRight {
-    0% {
-        transform: rotateY(0deg);
-        transform-origin: left center;
-        filter: brightness(1);
-        box-shadow: 0 5px 30px rgba(0,0,0,0.8);
-    }
-    25% {
-        transform: rotateY(-30deg);
-        filter: brightness(0.9);
-        box-shadow: -5px 5px 35px rgba(0,0,0,0.7);
-    }
-    50% {
-        transform: rotateY(-90deg);
-        filter: brightness(0.6);
-        box-shadow: -10px 5px 40px rgba(0,0,0,0.5);
-    }
-    75% {
-        transform: rotateY(-150deg);
-        filter: brightness(0.7);
-        box-shadow: -5px 5px 35px rgba(0,0,0,0.7);
-    }
-    100% {
-        transform: rotateY(-180deg);
-        filter: brightness(0.85);
-        box-shadow: 0 5px 30px rgba(0,0,0,0.8);
-        opacity: 0;
-    }
-}
-
-@keyframes pageFlipLeft {
-    0% {
-        transform: rotateY(0deg);
-        transform-origin: right center;
-        filter: brightness(1);
-        box-shadow: 0 5px 30px rgba(0,0,0,0.8);
-    }
-    25% {
-        transform: rotateY(30deg);
-        filter: brightness(0.9);
-        box-shadow: 5px 5px 35px rgba(0,0,0,0.7);
-    }
-    50% {
-        transform: rotateY(90deg);
-        filter: brightness(0.6);
-        box-shadow: 10px 5px 40px rgba(0,0,0,0.5);
-    }
-    75% {
-        transform: rotateY(150deg);
-        filter: brightness(0.7);
-        box-shadow: 5px 5px 35px rgba(0,0,0,0.7);
-    }
-    100% {
-        transform: rotateY(180deg);
-        filter: brightness(0.85);
-        box-shadow: 0 5px 30px rgba(0,0,0,0.8);
-        opacity: 0;
-    }
-}
-
-.page-single {
-    width: 100%;
-    height: auto;
-}
-
-.page-single img {
-    width: 100%;
-    height: auto;
-}
-
-#current-page-img {
-    display: none;
-}
-
-.nav-btn {
+/* Turn.js shadows */
+#flipbook .even .gradient {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(37, 99, 166, 0.7);
-    color: white;
-    border: none;
-    font-size: 48px;
-    padding: 20px 15px;
-    cursor: pointer;
-    z-index: 10;
-    transition: background 0.3s;
-    line-height: 1;
-    border-radius: 4px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 100%);
 }
 
-.nav-btn:hover {
-    background: rgba(37, 99, 166, 0.9);
+#flipbook .odd .gradient {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to left, rgba(0,0,0,0) 0%, rgba(0,0,0,0.15) 100%);
 }
 
-.nav-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
+/* Zoom container */
+.zoomed-view {
+    cursor: move;
+    cursor: grab;
 }
 
-#prev-btn {
-    left: 10px;
-}
-
-#next-btn {
-    right: 10px;
+.zoomed-view:active {
+    cursor: grabbing;
 }
 
 #thumbnail-bar {
@@ -472,218 +370,206 @@ body {
 
     def _get_js(self):
         """Return JavaScript content"""
-        return '''let currentSpread = 0;
-let isAnimating = false;
-const isMobile = window.innerWidth <= 768;
+        return '''// Configuration
+let soundEnabled = true;
 let zoomLevel = 1;
-let rotationAngle = 0;
+const isMobile = window.innerWidth <= 768;
 
-const pageContainer = document.getElementById('page-container');
-const currentPageSpan = document.getElementById('current-page');
-const prevBtn = document.getElementById('prev-btn');
-const nextBtn = document.getElementById('next-btn');
-const firstPageBtn = document.getElementById('first-page-btn');
-const lastPageBtn = document.getElementById('last-page-btn');
-const prevPageBtn = document.getElementById('prev-page-btn');
-const nextPageBtn = document.getElementById('next-page-btn');
-const thumbnails = document.querySelectorAll('.thumbnail');
+// Page flip sound (base64 encoded short beep)
+const flipSound = new Audio('data:audio/wav;base64,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');
+
+// Elements
+const flipbook = $('#flipbook');
+const currentPageSpan = $('#current-page');
+const thumbnails = $('.thumbnail');
 
 // Toolbar buttons
-const zoomInBtn = document.getElementById('zoom-in-btn');
-const zoomOutBtn = document.getElementById('zoom-out-btn');
-const rotateLeftBtn = document.getElementById('rotate-left-btn');
-const rotateRightBtn = document.getElementById('rotate-right-btn');
-const fullscreenBtn = document.getElementById('fullscreen-btn');
+const zoomInBtn = $('#zoom-in-btn');
+const zoomOutBtn = $('#zoom-out-btn');
+const soundBtn = $('#sound-btn');
+const prevPageBtn = $('#prev-page-btn');
+const nextPageBtn = $('#next-page-btn');
+const firstPageBtn = $('#first-page-btn');
+const lastPageBtn = $('#last-page-btn');
+const shareBtn = $('#share-btn');
+const fullscreenBtn = $('#fullscreen-btn');
 
-function loadSpread(spreadNum, direction = 'none') {
-    if (isAnimating) return;
-    if (spreadNum < 0) spreadNum = 0;
-
-    const maxSpread = Math.ceil(totalPages / 2) - 1;
-    if (spreadNum > maxSpread) spreadNum = maxSpread;
-
-    currentSpread = spreadNum;
-
-    const leftPage = currentSpread * 2 + 1;
-    const rightPage = currentSpread * 2 + 2;
-
-    pageContainer.innerHTML = '';
-
-    if (leftPage <= totalPages) {
-        const leftDiv = document.createElement('div');
-        leftDiv.className = 'page-spread page-left';
-        if (direction === 'prev') leftDiv.classList.add('page-turning-prev');
-
-        const leftImg = document.createElement('img');
-        leftImg.src = `files/pages/${leftPage}.jpg`;
-        leftImg.alt = `Page ${leftPage}`;
-        leftDiv.appendChild(leftImg);
-        pageContainer.appendChild(leftDiv);
-    }
-
-    if (!isMobile && rightPage <= totalPages) {
-        const rightDiv = document.createElement('div');
-        rightDiv.className = 'page-spread page-right';
-        if (direction === 'next') rightDiv.classList.add('page-turning-next');
-
-        const rightImg = document.createElement('img');
-        rightImg.src = `files/pages/${rightPage}.jpg`;
-        rightImg.alt = `Page ${rightPage}`;
-        rightDiv.appendChild(rightImg);
-        pageContainer.appendChild(rightDiv);
-    }
-
-    if (isMobile) {
-        currentPageSpan.textContent = leftPage;
-    } else {
-        const displayPages = rightPage <= totalPages ? `${leftPage}-${rightPage}` : leftPage;
-        currentPageSpan.textContent = displayPages;
-    }
-
-    prevBtn.disabled = currentSpread === 0;
-    nextBtn.disabled = (isMobile ? leftPage >= totalPages : rightPage >= totalPages);
-
-    thumbnails.forEach(thumb => {
-        const thumbPage = parseInt(thumb.dataset.page);
-        const isActive = (thumbPage === leftPage || (!isMobile && thumbPage === rightPage));
-        thumb.classList.toggle('active', isActive);
-    });
-
-    const activeThumb = document.querySelector(`.thumbnail[data-page="${leftPage}"]`);
-    if (activeThumb) {
-        activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-
-    if (direction !== 'none') {
-        isAnimating = true;
-        setTimeout(() => { isAnimating = false; }, 700);
-    }
-}
-
-function nextPage() {
-    if (!isAnimating) {
-        loadSpread(currentSpread + 1, 'next');
-    }
-}
-
-function prevPage() {
-    if (!isAnimating) {
-        loadSpread(currentSpread - 1, 'prev');
-    }
-}
-
-function firstPage() {
-    if (!isAnimating) {
-        loadSpread(0, 'prev');
-    }
-}
-
-function lastPage() {
-    if (!isAnimating) {
-        const maxSpread = Math.ceil(totalPages / 2) - 1;
-        loadSpread(maxSpread, 'next');
-    }
-}
-
-// Zoom functions
-function zoomIn() {
-    zoomLevel = Math.min(zoomLevel + 0.25, 3);
-    pageContainer.style.transform = `scale(${zoomLevel}) rotate(${rotationAngle}deg)`;
-}
-
-function zoomOut() {
-    zoomLevel = Math.max(zoomLevel - 0.25, 0.5);
-    pageContainer.style.transform = `scale(${zoomLevel}) rotate(${rotationAngle}deg)`;
-}
-
-// Rotation functions
-function rotateLeft() {
-    rotationAngle -= 90;
-    pageContainer.style.transform = `scale(${zoomLevel}) rotate(${rotationAngle}deg)`;
-}
-
-function rotateRight() {
-    rotationAngle += 90;
-    pageContainer.style.transform = `scale(${zoomLevel}) rotate(${rotationAngle}deg)`;
-}
-
-// Fullscreen toggle
-function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-        fullscreenBtn.querySelector('i').className = 'fas fa-compress';
-    } else {
-        document.exitFullscreen();
-        fullscreenBtn.querySelector('i').className = 'fas fa-expand';
-    }
-}
-
-// Event listeners - navigation
-prevBtn.addEventListener('click', prevPage);
-nextBtn.addEventListener('click', nextPage);
-firstPageBtn.addEventListener('click', firstPage);
-lastPageBtn.addEventListener('click', lastPage);
-prevPageBtn.addEventListener('click', prevPage);
-nextPageBtn.addEventListener('click', nextPage);
-
-// Event listeners - toolbar
-zoomInBtn.addEventListener('click', zoomIn);
-zoomOutBtn.addEventListener('click', zoomOut);
-rotateLeftBtn.addEventListener('click', rotateLeft);
-rotateRightBtn.addEventListener('click', rotateRight);
-fullscreenBtn.addEventListener('click', toggleFullscreen);
-
-thumbnails.forEach(thumb => {
-    thumb.addEventListener('click', () => {
-        const pageNum = parseInt(thumb.dataset.page);
-        const spreadNum = Math.floor((pageNum - 1) / 2);
-        if (!isAnimating) {
-            loadSpread(spreadNum, 'none');
+// Initialize turn.js
+$(document).ready(function() {
+    flipbook.turn({
+        width: isMobile ? 400 : 1000,
+        height: isMobile ? 600 : 700,
+        elevation: 50,
+        gradients: true,
+        autoCenter: true,
+        duration: 600,
+        acceleration: true,
+        display: isMobile ? 'single' : 'double',
+        when: {
+            turned: function(e, page) {
+                currentPageSpan.text(page);
+                updateThumbnails(page);
+                if (soundEnabled) {
+                    flipSound.currentTime = 0;
+                    flipSound.play().catch(() => {});
+                }
+                // Google Analytics
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'page_turn', {
+                        'page_number': page
+                    });
+                }
+            },
+            start: function(e, pageObj, corner) {
+                if (soundEnabled) {
+                    flipSound.volume = 0.3;
+                }
+            }
         }
     });
+
+    // Update page display
+    currentPageSpan.text(1);
+    updateThumbnails(1);
 });
 
-document.addEventListener('keydown', (e) => {
-    switch(e.key) {
-        case 'ArrowLeft':
-        case 'PageUp':
-            prevPage();
-            break;
-        case 'ArrowRight':
-        case 'PageDown':
-        case ' ':
-            e.preventDefault();
-            nextPage();
-            break;
-        case 'Home':
-            firstPage();
-            break;
-        case 'End':
-            lastPage();
-            break;
-    }
-});
+// Helper functions
+function updateThumbnails(page) {
+    thumbnails.removeClass('active');
+    thumbnails.eq(page - 1).addClass('active');
 
-let touchStartX = 0;
-let touchEndX = 0;
-
-pageContainer.addEventListener('touchstart', (e) => {
-    touchStartX = e.changedTouches[0].screenX;
-}, false);
-
-pageContainer.addEventListener('touchend', (e) => {
-    touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
-}, false);
-
-function handleSwipe() {
-    const swipeThreshold = 50;
-    if (touchEndX < touchStartX - swipeThreshold) {
-        nextPage();
-    }
-    if (touchEndX > touchStartX + swipeThreshold) {
-        prevPage();
+    // Auto-scroll to active thumbnail
+    const activeThumbnail = thumbnails.eq(page - 1)[0];
+    if (activeThumbnail) {
+        activeThumbnail.scrollIntoView({behavior: 'smooth', block: 'nearest', inline: 'center'});
     }
 }
 
-loadSpread(0, 'none');'''
+function applyZoom(scale) {
+    zoomLevel = Math.max(0.5, Math.min(3, scale));
+    flipbook.turn('stop').css({
+        transform: `scale(${zoomLevel})`,
+        transformOrigin: 'center center'
+    });
+}
+
+// Toolbar button handlers
+zoomInBtn.click(function() {
+    applyZoom(zoomLevel + 0.25);
+});
+
+zoomOutBtn.click(function() {
+    applyZoom(zoomLevel - 0.25);
+});
+
+soundBtn.click(function() {
+    soundEnabled = !soundEnabled;
+    $(this).find('i').toggleClass('fa-volume-up fa-volume-mute');
+    $(this).toggleClass('active');
+});
+
+prevPageBtn.click(function() {
+    flipbook.turn('previous');
+});
+
+nextPageBtn.click(function() {
+    flipbook.turn('next');
+});
+
+firstPageBtn.click(function() {
+    flipbook.turn('page', 1);
+});
+
+lastPageBtn.click(function() {
+    flipbook.turn('page', flipbook.turn('pages'));
+});
+
+shareBtn.click(function() {
+    if (navigator.share) {
+        navigator.share({
+            title: document.title,
+            text: 'Podívejte se na tento flipbook',
+            url: window.location.href
+        }).catch(() => {});
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            alert('Odkaz zkopírován do schránky!');
+        }).catch(() => {
+            alert('URL: ' + window.location.href);
+        });
+    }
+});
+
+fullscreenBtn.click(function() {
+    const elem = document.documentElement;
+    if (!document.fullscreenElement) {
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen();
+        }
+        $(this).find('i').removeClass('fa-expand').addClass('fa-compress');
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+        $(this).find('i').removeClass('fa-compress').addClass('fa-expand');
+    }
+});
+
+// Thumbnail click handlers
+thumbnails.click(function() {
+    const page = $(this).data('page');
+    flipbook.turn('page', page);
+});
+
+// Keyboard navigation
+$(document).keydown(function(e) {
+    switch(e.which) {
+        case 37: // left arrow
+        case 33: // page up
+            flipbook.turn('previous');
+            e.preventDefault();
+            break;
+        case 39: // right arrow
+        case 34: // page down
+        case 32: // space
+            flipbook.turn('next');
+            e.preventDefault();
+            break;
+        case 36: // home
+            flipbook.turn('page', 1);
+            e.preventDefault();
+            break;
+        case 35: // end
+            flipbook.turn('page', flipbook.turn('pages'));
+            e.preventDefault();
+            break;
+    }
+});
+
+// Zoom on click - click on page to zoom to that point
+flipbook.on('click', '.page', function(e) {
+    if (zoomLevel === 1) {
+        // Zoom in to 2x at click position
+        const rect = this.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+        zoomLevel = 2;
+        flipbook.turn('stop').css({
+            transform: `scale(2)`,
+            transformOrigin: `${x}% ${y}%`
+        });
+    } else {
+        // Zoom out to 1x
+        applyZoom(1);
+    }
+});'''
