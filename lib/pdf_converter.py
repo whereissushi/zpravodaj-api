@@ -88,6 +88,7 @@ class PDFToFlipbook:
     <title>{self.title}</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Version: 2.0 - Blue Toolbar Design - 2025-10-31 -->
 </head>
 <body>
     <div id="flipbook-container">
