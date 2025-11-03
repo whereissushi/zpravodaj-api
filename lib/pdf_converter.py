@@ -104,6 +104,9 @@ class PDFToFlipbook:
     <div id="flipbook-container">
         <!-- Modrý toolbar -->
         <div id="flipbook-toolbar">
+            <button id="search-btn" class="toolbar-btn" title="Vyhledávání">
+                <i class="fas fa-search"></i>
+            </button>
             <button id="zoom-in-btn" class="toolbar-btn" title="Přiblížit">
                 <i class="fas fa-magnifying-glass-plus"></i>
             </button>
@@ -145,6 +148,16 @@ class PDFToFlipbook:
             <div id="thumbnail-container">
                 {''.join(f'<img src="files/thumb/{i}.jpg" class="thumbnail" data-page="{i}" alt="Stránka {i}">' for i in range(1, page_count + 1))}
             </div>
+        </div>
+    </div>
+
+    <!-- Search overlay -->
+    <div id="search-overlay" style="display: none;">
+        <div class="search-modal">
+            <h2>Vyhledávání</h2>
+            <input type="text" id="search-input" placeholder="Zadejte hledaný text...">
+            <div id="search-results"></div>
+            <button id="search-close-btn">Zavřít</button>
         </div>
     </div>
 
@@ -363,6 +376,93 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: #5a5a5a;
+}
+
+/* Search overlay */
+#search-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-modal {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.search-modal h2 {
+    margin-bottom: 20px;
+    color: #2563a6;
+}
+
+#search-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #2563a6;
+    border-radius: 4px;
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+#search-results {
+    max-height: 400px;
+    overflow-y: auto;
+    margin: 15px 0;
+}
+
+.search-result-item {
+    padding: 12px;
+    margin: 8px 0;
+    background: #f5f5f5;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.search-result-item:hover {
+    background: #e0e0e0;
+}
+
+.search-result-page {
+    font-weight: bold;
+    color: #2563a6;
+    margin-bottom: 5px;
+}
+
+.search-result-snippet {
+    font-size: 14px;
+    color: #666;
+}
+
+.search-highlight {
+    background: yellow;
+    font-weight: bold;
+}
+
+#search-close-btn {
+    background: #2563a6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#search-close-btn:hover {
+    background: #1e4f8a;
 }'''
 
     def _get_js(self):
@@ -377,6 +477,7 @@ const currentPageSpan = $('#current-page');
 const thumbnails = $('.thumbnail');
 
 // Toolbar buttons
+const searchBtn = $('#search-btn');
 const zoomInBtn = $('#zoom-in-btn');
 const zoomOutBtn = $('#zoom-out-btn');
 const prevPageBtn = $('#prev-page-btn');
@@ -386,11 +487,22 @@ const lastPageBtn = $('#last-page-btn');
 const shareBtn = $('#share-btn');
 const fullscreenBtn = $('#fullscreen-btn');
 
+// Search elements
+const searchOverlay = $('#search-overlay');
+const searchInput = $('#search-input');
+const searchResults = $('#search-results');
+const searchCloseBtn = $('#search-close-btn');
+
+// Zoom state
+let zoomActive = false;
+let zoomClickX = 0;
+let zoomClickY = 0;
+
 // Initialize turn.js
 $(document).ready(function() {
     flipbook.turn({
-        width: isMobile ? 400 : 1000,
-        height: isMobile ? 600 : 700,
+        width: isMobile ? 400 : 1400,
+        height: isMobile ? 600 : 990,
         elevation: 50,
         gradients: true,
         autoCenter: true,
@@ -437,12 +549,92 @@ function applyZoom(scale) {
 }
 
 // Toolbar button handlers
+searchBtn.click(function() {
+    searchOverlay.show();
+    searchInput.focus();
+});
+
+searchCloseBtn.click(function() {
+    searchOverlay.hide();
+    searchInput.val('');
+    searchResults.html('');
+});
+
+searchOverlay.click(function(e) {
+    if (e.target === this) {
+        searchOverlay.hide();
+    }
+});
+
+searchInput.on('input', function() {
+    const query = $(this).val().trim();
+    if (query.length >= 2) {
+        performSearch(query);
+    } else {
+        searchResults.html('');
+    }
+});
+
+function performSearch(query) {
+    // Simple search in page numbers (you can enhance this with OCR data)
+    searchResults.html('<p>Vyhledávání zatím nepodporuje fulltextové vyhledávání. Použijte číselné vyhledávání stránek.</p>');
+
+    // Try to parse as page number
+    const pageNum = parseInt(query);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+        searchResults.html(`
+            <div class="search-result-item" onclick="goToPage(${pageNum})">
+                <div class="search-result-page">Přejít na stránku ${pageNum}</div>
+            </div>
+        `);
+    }
+}
+
+function goToPage(page) {
+    flipbook.turn('page', page);
+    searchOverlay.hide();
+    searchInput.val('');
+    searchResults.html('');
+}
+
 zoomInBtn.click(function() {
     applyZoom(zoomLevel + 0.25);
 });
 
 zoomOutBtn.click(function() {
     applyZoom(zoomLevel - 0.25);
+});
+
+// Click-to-zoom on pages
+flipbook.on('click', '.page img', function(e) {
+    if (!zoomActive) {
+        // Get click position relative to the image
+        const offset = $(this).offset();
+        const x = e.pageX - offset.left;
+        const y = e.pageY - offset.top;
+        const width = $(this).width();
+        const height = $(this).height();
+
+        // Calculate transform origin as percentage
+        const originX = (x / width) * 100;
+        const originY = (y / height) * 100;
+
+        // Zoom to 2x at click point
+        zoomLevel = 2;
+        flipbook.turn('stop').css({
+            transform: `scale(2)`,
+            transformOrigin: `${originX}% ${originY}%`
+        });
+        zoomActive = true;
+    } else {
+        // Reset zoom
+        zoomLevel = 1;
+        flipbook.turn('stop').css({
+            transform: `scale(1)`,
+            transformOrigin: 'center center'
+        });
+        zoomActive = false;
+    }
 });
 
 prevPageBtn.click(function() {
