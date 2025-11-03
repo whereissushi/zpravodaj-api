@@ -105,13 +105,10 @@ class PDFToFlipbook:
         <!-- Modrý toolbar -->
         <div id="flipbook-toolbar">
             <button id="zoom-in-btn" class="toolbar-btn" title="Přiblížit">
-                <i class="fas fa-plus"></i>
+                <i class="fas fa-magnifying-glass-plus"></i>
             </button>
             <button id="zoom-out-btn" class="toolbar-btn" title="Oddálit">
-                <i class="fas fa-minus"></i>
-            </button>
-            <button id="sound-btn" class="toolbar-btn" title="Zvuk">
-                <i class="fas fa-volume-up"></i>
+                <i class="fas fa-magnifying-glass-minus"></i>
             </button>
             <button id="prev-page-btn" class="toolbar-btn" title="Předchozí">
                 <i class="fas fa-chevron-left"></i>
@@ -371,12 +368,8 @@ body {
     def _get_js(self):
         """Return JavaScript content"""
         return '''// Configuration
-let soundEnabled = true;
 let zoomLevel = 1;
 const isMobile = window.innerWidth <= 768;
-
-// Page flip sound (base64 encoded short beep)
-const flipSound = new Audio('data:audio/wav;base64,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');
 
 // Elements
 const flipbook = $('#flipbook');
@@ -386,7 +379,6 @@ const thumbnails = $('.thumbnail');
 // Toolbar buttons
 const zoomInBtn = $('#zoom-in-btn');
 const zoomOutBtn = $('#zoom-out-btn');
-const soundBtn = $('#sound-btn');
 const prevPageBtn = $('#prev-page-btn');
 const nextPageBtn = $('#next-page-btn');
 const firstPageBtn = $('#first-page-btn');
@@ -409,20 +401,11 @@ $(document).ready(function() {
             turned: function(e, page) {
                 currentPageSpan.text(page);
                 updateThumbnails(page);
-                if (soundEnabled) {
-                    flipSound.currentTime = 0;
-                    flipSound.play().catch(() => {});
-                }
                 // Google Analytics
                 if (typeof gtag !== 'undefined') {
                     gtag('event', 'page_turn', {
                         'page_number': page
                     });
-                }
-            },
-            start: function(e, pageObj, corner) {
-                if (soundEnabled) {
-                    flipSound.volume = 0.3;
                 }
             }
         }
@@ -460,12 +443,6 @@ zoomInBtn.click(function() {
 
 zoomOutBtn.click(function() {
     applyZoom(zoomLevel - 0.25);
-});
-
-soundBtn.click(function() {
-    soundEnabled = !soundEnabled;
-    $(this).find('i').toggleClass('fa-volume-up fa-volume-mute');
-    $(this).toggleClass('active');
 });
 
 prevPageBtn.click(function() {
