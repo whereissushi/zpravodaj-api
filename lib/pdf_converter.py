@@ -91,14 +91,30 @@ class PDFToFlipbook:
 
     def _extract_text_ocr(self):
         """Extract text from page images using OCR"""
+        total = len(self.pages_images)
+        print(f"Starting OCR extraction for {total} pages...")
+
         for i, page_bytes in enumerate(self.pages_images, start=1):
             try:
+                # Open image from bytes
                 img = Image.open(io.BytesIO(page_bytes))
-                text = pytesseract.image_to_string(img, lang='ces')
+
+                # Resize image to speed up OCR (max width 2000px)
+                max_width = 2000
+                if img.width > max_width:
+                    ratio = max_width / img.width
+                    new_size = (max_width, int(img.height * ratio))
+                    img = img.resize(new_size, Image.Resampling.LANCZOS)
+
+                # Run OCR with Czech language
+                text = pytesseract.image_to_string(img, lang='ces', config='--psm 1')
                 self.page_texts[str(i)] = text.strip()
-                print(f"  OCR stránka {i}/{len(self.pages_images)}")
+
+                # Progress logging
+                if i % 5 == 0 or i == total:
+                    print(f"  OCR progress: {i}/{total} pages ({int(i/total*100)}%)")
             except Exception as e:
-                print(f"  Varování: OCR selhalo na stránce {i}: {e}")
+                print(f"  WARNING: OCR failed on page {i}: {e}")
                 self.page_texts[str(i)] = ""
 
     def _generate_html(self, page_count):
