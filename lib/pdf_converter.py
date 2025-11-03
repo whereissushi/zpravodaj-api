@@ -40,15 +40,15 @@ class PDFToFlipbook:
         # Extract text with OCR
         self._extract_text_ocr()
 
-        # Generate HTML/CSS/JS
-        html = self._generate_html(len(self.pages_images))
-        css = self._get_css()
-        js = self._get_js()
-
         # Generate search data JSON
         search_data = json.dumps({
             "pages": self.page_texts
         }, ensure_ascii=False, indent=2)
+
+        # Generate HTML/CSS/JS with embedded search data
+        html = self._generate_html(len(self.pages_images), search_data)
+        css = self._get_css()
+        js = self._get_js()
 
         # Debug: Print sample of search data
         if self.page_texts:
@@ -124,8 +124,8 @@ class PDFToFlipbook:
                 print(f"  WARNING: OCR failed on page {i}: {e}")
                 self.page_texts[str(i)] = ""
 
-    def _generate_html(self, page_count):
-        """Generate HTML content"""
+    def _generate_html(self, page_count, search_data_json):
+        """Generate HTML content with embedded search data"""
         return f'''<!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -210,8 +210,10 @@ class PDFToFlipbook:
 
     <script>
         const totalPages = {page_count};
+        // Embedded search data for offline use
+        const searchDataEmbedded = {search_data_json};
     </script>
-    <script src="js/flipbook.js?v=2"></script>
+    <script src="js/flipbook.js?v=3"></script>
 </body>
 </html>'''
 
@@ -545,28 +547,19 @@ let zoomActive = false;
 let zoomClickX = 0;
 let zoomClickY = 0;
 
-// Search data
-let searchData = null;
+// Search data - use embedded data from HTML
+let searchData = typeof searchDataEmbedded !== 'undefined' ? searchDataEmbedded : null;
 
-// Load search data
-fetch('search_data.json')
-    .then(response => {
-        console.log('search_data.json response status:', response.status);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        searchData = data;
-        console.log('Search data loaded successfully!');
-        console.log('Total pages:', Object.keys(data.pages).length);
-        console.log('Sample page 1 length:', data.pages['1'] ? data.pages['1'].length : 'N/A');
-    })
-    .catch(error => {
-        console.error('Failed to load search data:', error);
-        searchData = null;
-    });
+// Log search data status
+if (searchData) {
+    console.log('Search data loaded successfully (embedded)!');
+    console.log('Total pages:', Object.keys(searchData.pages).length);
+    const firstPageText = searchData.pages['1'] || '';
+    console.log('Sample page 1 length:', firstPageText.length, 'characters');
+    console.log('Sample text:', firstPageText.substring(0, 100) + '...');
+} else {
+    console.warn('Search data not available - searching will not work');
+}
 
 // Initialize turn.js
 $(document).ready(function() {

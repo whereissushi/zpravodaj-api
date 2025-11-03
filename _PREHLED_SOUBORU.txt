@@ -1,0 +1,129 @@
+╔═══════════════════════════════════════════════════════════╗
+║                                                           ║
+║          ZPRAVODAJ CONVERTER - PŘEHLED SOUBORŮ           ║
+║                                                           ║
+╚═══════════════════════════════════════════════════════════╝
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 SPUSTITELNÉ SOUBORY (to co používáte)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📌 START_HERE.bat
+   → ZAČNĚTE TADY!
+   → Hlavní instalační menu
+   → Dvojklik a pak zmáčkněte "1"
+
+📌 SETUP.bat
+   → Automatická instalace všeho
+   → Volá se automaticky z START_HERE.bat
+
+📌 SETUP_SIMPLE.bat
+   → Rychlá instalace (pokud máte již Python)
+
+📌 zpravodaj_gui.py
+   → GUI aplikace (spustitelná po instalaci)
+   → python zpravodaj_gui.py
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💻 HLAVNÍ PROGRAMOVÉ SOUBORY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📄 pdf_to_flipbook.py
+   → Jádro programu - konverze PDF na HTML
+   → Dá se používat i samostatně z příkazové řádky
+
+📄 zpravodaj_gui.py
+   → Grafické rozhraní
+   → Jednoduché ovládání pro ne-IT lidi
+
+📄 ZpravodajConverter.spec
+   → Konfigurace pro vytvoření EXE
+   → Používá PyInstaller
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📖 DOKUMENTACE (čtěte když něco nejde)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📘 JAK_ZACIT.txt
+   → Jednoduchý návod "krok za krokem"
+   → Přečtěte si pokud nevíte co dělat
+
+📘 POSTUP.txt
+   → Základní postup instalace a použití
+
+📘 README.md
+   → Kompletní dokumentace projektu
+   → Popis funkcí, použití, požadavky
+
+📘 INSTALACE.md
+   → Detailní návod k instalaci
+   → Řešení problémů
+   → Jak vytvořit EXE
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚙️ KONFIGURAČNÍ SOUBORY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 requirements.txt
+   → Seznam Python knihoven
+   → pdf2image, Pillow
+
+📋 build_exe.bat
+   → Jednoduchý skript pro build EXE
+   → (alternativa k START_HERE.bat)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📁 SLOŽKY (vytvoří se po instalaci)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📂 dist/
+   → Obsahuje finální EXE soubor
+   → dist/ZpravodajConverter.exe
+
+📂 build/
+   → Pomocné soubory při sestavení EXE
+   → Můžete smazat
+
+📂 venv/
+   → Virtuální Python prostředí
+   → Můžete ignorovat
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📂 SLOŽKY SE ZPRAVODAJI (vaše data)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📂 Zpravodaje/
+   ├── FM Zari 2025 zdroj.pdf        (vstupní PDF)
+   ├── Beroun - Říjen 2025.pdf       (vstupní PDF)
+   ├── FM zari-2025/                 (výstup - stará verze)
+   └── Beroun - Říjen 2025/          (výstup - stará verze)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ CO DĚLAT TERAZ?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Přečtěte si: JAK_ZACIT.txt
+
+2. Dvojklik na: START_HERE.bat
+
+3. Zmáčkněte: 1 (a ENTER)
+
+4. Počkejte na instalaci
+
+5. Restartujte počítač
+
+6. Spusťte: dist\ZpravodajConverter.exe
+
+7. Hotovo! 🎉
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Něco nejasného? Viz JAK_ZACIT.txt nebo INSTALACE.md

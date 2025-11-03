@@ -51,9 +51,12 @@ Thumbs.db
 # Desktop app files (not needed for Railway)
 Zpravodaje/
 *.bat
-*.txt
-*.png
 *.iss
 installer_output/
 poppler/
 zpravodaj-api/
+
+# Exclude desktop files but keep project files
+!requirements.txt
+!requirements-lambda.txt
+!AWS_DEPLOYMENT.md

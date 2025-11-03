@@ -1,0 +1,31 @@
+Nahradit třetí strany (obskurní Windows aplikace + cloudové služby typu flip5html)
+  vlastním in-house řešením pro převod PDF zpravodajů na webové flipbooky.
+
+  CO JSEM UDĚLAL:
+  Vytvořil jsem desktop aplikaci (Windows EXE) s GUI, která lokálně převádí
+  PDF soubory na interaktivní HTML flipbooky bez nutnosti internetu nebo
+  cloudových služeb.
+
+  TECHNICKÉ ŘEŠENÍ:
+  - Jazyk: Python (Tkinter GUI + pdf2image + Pillow)
+  - Vstup: PDF soubor
+  - Výstup: Složka se statickými HTML/CSS/JS soubory + JPEG stránky
+  - Žádné závislosti na externí službě, kompletně offline
+
+  HLAVNÍ FEATURES:
+  ✓ Double-page spread (2 stránky vedle sebe jako otevřený časopis)
+  ✓ 3D animace listování (realistické otáčení stránek)
+  ✓ Responsive design (mobil = 1 stránka, desktop = 2 stránky)
+  ✓ Keyboard navigation (šipky, PageUp/Down, Home/End)
+  ✓ Thumbnail bar pro rychlý přeskok
+  ✓ Žádné externí CDN/knihovny - vše self-contained
+
+  DEPLOYMENT:
+  - Jeden EXE soubor + instalace Poppler (PDF engine)
+  - Výstup = statická HTML struktura nahratelná přímo na server
+  - Bez databáze, bez backendu, bez cloudu
+
+  VÝSLEDEK:
+  Plně funkční náhrada flip5html s vlastním brandingem, žádné náklady
+  na licence, žádné odesílání dat třetím stranám, kompletní kontrola
+  nad výstupem.

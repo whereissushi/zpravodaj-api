@@ -1,0 +1,70 @@
+═══════════════════════════════════════════════════════════
+  ZPRAVODAJ CONVERTER - CO UDĚLAT?
+═══════════════════════════════════════════════════════════
+
+KROK 1: Spusťte START_HERE.bat
+─────────────────────────────────────────────────────────
+
+   Dvojklik na: START_HERE.bat
+
+   → Objeví se menu kde si vyberete instalaci
+
+
+KROK 2: Vyberte možnost 1 (Automatická instalace)
+─────────────────────────────────────────────────────────
+
+   Skript automaticky:
+
+   ✓ Stáhne a nainstaluje Python 3.11
+   ✓ Stáhne a nainstaluje Poppler (pro PDF)
+   ✓ Nainstaluje potřebné knihovny
+   ✓ Vytvoří ZpravodajConverter.exe
+
+
+KROK 3: DŮLEŽITÉ! Po instalaci
+─────────────────────────────────────────────────────────
+
+   Pokud jste instalovali poprvé:
+
+   → RESTARTUJTE POČÍTAČ
+
+   (Je to potřeba kvůli aktualizaci PATH proměnné)
+
+
+KROK 4: Použití
+─────────────────────────────────────────────────────────
+
+   Po restartu najdete:
+
+   📁 dist\ZpravodajConverter.exe
+
+   → Tento soubor dvojklikem spustíte
+   → Vyberete PDF
+   → Kliknete "KONVERTOVAT"
+   → Hotovo!
+
+
+═══════════════════════════════════════════════════════════
+  ČASTÉ OTÁZKY
+═══════════════════════════════════════════════════════════
+
+Q: Mám již Python nainstalovaný
+A: Použijte možnost 2 v menu (Rychlá instalace)
+
+Q: Chci jen vyzkoušet bez instalace
+A: Použijte možnost 3 v menu (Spustit GUI)
+
+Q: Nefunguje mi EXE soubor
+A: Zkontrolujte že máte nainstalovaný Poppler a restartovali jste PC
+
+Q: Chci distribuovat kolegům
+A: Předejte jim ZpravodajConverter.exe + oni musí nainstalovat Poppler
+   (viz INSTALACE.md sekce "Instalace Poppler")
+
+Q: Kde je výstup?
+A: Po konverzi se vytvoří složka s HTML soubory
+   Tu celou nahrajete na web server
+
+═══════════════════════════════════════════════════════════
+
+Pro více informací viz README.md nebo INSTALACE.md

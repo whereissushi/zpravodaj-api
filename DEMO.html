@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zpravodaj Converter - DEMO</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 20px;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .feature {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .feature h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .feature p {
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+
+        .mockup {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 30px 0;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .mockup-header {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .mockup-title {
+            font-weight: 600;
+        }
+
+        .mockup-pages {
+            color: #888;
+        }
+
+        .mockup-viewer {
+            background: #3a3a3a;
+            height: 400px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mockup-page {
+            width: 80%;
+            height: 90%;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 5px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .nav-arrow {
+            position: absolute;
+            font-size: 48px;
+            cursor: pointer;
+            user-select: none;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .nav-arrow:hover {
+            opacity: 1;
+        }
+
+        .nav-arrow.left {
+            left: 20px;
+        }
+
+        .nav-arrow.right {
+            right: 20px;
+        }
+
+        .mockup-controls {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .control-btn {
+            background: #3a3a3a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .control-btn:hover {
+            background: #4a4a4a;
+        }
+
+        .cta {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .cta-text {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 20px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 4px solid #28a745;
+        }
+
+        .info h3 {
+            margin-bottom: 10px;
+        }
+
+        .info ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .info li {
+            padding: 8px 0;
+            opacity: 0.9;
+        }
+
+        .info li:before {
+            content: "✓ ";
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 Zpravodaj Converter</h1>
+        <div class="subtitle">Automatický převod PDF zpravodajů na interaktivní HTML flipbook</div>
+
+        <div class="mockup">
+            <div class="mockup-header">
+                <div class="mockup-title">Frýdek-Místek 09/2025</div>
+                <div class="mockup-pages"><span id="currentPage">1</span> / 24</div>
+            </div>
+
+            <div class="mockup-viewer">
+                <div class="nav-arrow left" onclick="prevPage()">‹</div>
+                <div class="mockup-page" id="page">
+                    STRÁNKA <span id="pageNum">1</span>
+                </div>
+                <div class="nav-arrow right" onclick="nextPage()">›</div>
+            </div>
+
+            <div class="mockup-controls">
+                <button class="control-btn" onclick="firstPage()">⏮ První</button>
+                <button class="control-btn" onclick="prevPage()">‹ Předchozí</button>
+                <button class="control-btn">🔍 Zoom</button>
+                <button class="control-btn" onclick="nextPage()">Další ›</button>
+                <button class="control-btn" onclick="lastPage()">Poslední ⏭</button>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <h3>📖 Flipbook efekt</h3>
+                <p>Listování stránkami jako v časopise. Intuitivní ovládání šipkami nebo klikáním.</p>
+            </div>
+            <div class="feature">
+                <h3>📱 Mobilní verze</h3>
+                <p>Funguje perfektně na mobilu, tabletu i PC. Touch gesta pro listování.</p>
+            </div>
+            <div class="feature">
+                <h3>🔍 Zoom</h3>
+                <p>Přiblížení a oddálení stránek. Scroll pro pohyb v přiblížené stránce.</p>
+            </div>
+            <div class="feature">
+                <h3>⚡ Rychlé</h3>
+                <p>Lokální převod bez cloudu. Žádné čekání na upload, žádné limity.</p>
+            </div>
+            <div class="feature">
+                <h3>🎯 Jednoduché</h3>
+                <p>Grafické rozhraní. Kolega vybere PDF, klikne konvertovat, hotovo.</p>
+            </div>
+            <div class="feature">
+                <h3>🎨 Náhledy</h3>
+                <p>Miniaturní náhledy všech stránek. Rychlý přeskok na libovolnou stránku.</p>
+            </div>
+        </div>
+
+        <div class="info">
+            <h3>✨ Funkce:</h3>
+            <ul>
+                <li>Interaktivní flipbook s plynulým listováním</li>
+                <li>Klávesové zkratky (šipky, PageUp/Down, Home/End)</li>
+                <li>Touch gesta (swipe) na mobilních zařízeních</li>
+                <li>Responzivní design pro všechny velikosti obrazovek</li>
+                <li>Tmavý elegantní vzhled</li>
+                <li>Žádná závislost na externích službách</li>
+                <li>Vlastní kontrola nad daty</li>
+            </ul>
+        </div>
+
+        <div class="cta">
+            <div class="cta-text">🚀 Připraveni začít?</div>
+            <a href="#" class="cta-button" onclick="alert('Dvojklik na START_HERE.bat pro instalaci!'); return false;">
+                INSTALOVAT NYNÍ
+            </a>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; opacity: 0.7;">
+            <small>Toto je pouze demo vizualizace. Po instalaci dostanete plně funkční HTML flipbook.</small>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        const totalPages = 24;
+
+        function updatePage() {
+            document.getElementById('pageNum').textContent = currentPage;
+            document.getElementById('currentPage').textContent = currentPage;
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                updatePage();
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                updatePage();
+            }
+        }
+
+        function firstPage() {
+            currentPage = 1;
+            updatePage();
+        }
+
+        function lastPage() {
+            currentPage = totalPages;
+            updatePage();
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') prevPage();
+            if (e.key === 'ArrowRight') nextPage();
+        });
+    </script>
+</body>
+</html>
