@@ -37,6 +37,9 @@ def convert():
         converter = PDFToFlipbook(pdf_bytes, title)
         result = converter.convert()
 
+        # Generate safe filename early (needed for PDF in ZIP)
+        safe_title = title.replace(' ', '-').replace('/', '-').lower()
+
         # Create ZIP file in memory
         zip_buffer = io.BytesIO()
 
@@ -69,7 +72,6 @@ def convert():
         zip_buffer.seek(0)
 
         # Generate filename
-        safe_title = title.replace(' ', '-').replace('/', '-').lower()
         filename = f"{safe_title}-flipbook.zip"
 
         return send_file(
