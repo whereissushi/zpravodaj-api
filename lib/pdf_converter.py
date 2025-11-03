@@ -64,7 +64,8 @@ class PDFToFlipbook:
             'pages': self.pages_images,  # List of bytes (JPEG)
             'thumbs': self.thumb_images,  # List of bytes (JPEG)
             'search_data': search_data,  # JSON string
-            'page_count': len(self.pages_images)
+            'page_count': len(self.pages_images),
+            'pdf': self.pdf_bytes  # Original PDF for download
         }
 
     def _convert_pdf_to_images(self):
@@ -154,6 +155,9 @@ class PDFToFlipbook:
             <button id="search-btn" class="toolbar-btn" title="Vyhledávání">
                 <i class="fas fa-search"></i>
             </button>
+            <button id="menu-btn" class="toolbar-btn" title="Obsah">
+                <i class="fas fa-list"></i>
+            </button>
             <button id="zoom-in-btn" class="toolbar-btn" title="Přiblížit">
                 <i class="fas fa-magnifying-glass-plus"></i>
             </button>
@@ -183,6 +187,12 @@ class PDFToFlipbook:
             <button id="fullscreen-btn" class="toolbar-btn" title="Celá obrazovka">
                 <i class="fas fa-expand"></i>
             </button>
+            <button id="download-pdf-btn" class="toolbar-btn" title="Stáhnout PDF">
+                <i class="fas fa-file-pdf"></i>
+            </button>
+            <button id="ai-summary-btn" class="toolbar-btn" title="AI Shrnutí">
+                <i class="fas fa-robot"></i>
+            </button>
         </div>
 
         <div id="flipbook-viewer">
@@ -205,6 +215,29 @@ class PDFToFlipbook:
             <input type="text" id="search-input" placeholder="Zadejte hledaný text...">
             <div id="search-results"></div>
             <button id="search-close-btn">Zavřít</button>
+        </div>
+    </div>
+
+    <!-- AI Summary overlay -->
+    <div id="ai-summary-overlay" style="display: none;">
+        <div class="search-modal">
+            <h2>🤖 AI Shrnutí Zpravodaje</h2>
+            <div id="ai-summary-content">
+                <p style="text-align: center; color: #666;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i><br>
+                    Generuji shrnutí pomocí AI...
+                </p>
+            </div>
+            <button id="ai-summary-close-btn">Zavřít</button>
+        </div>
+    </div>
+
+    <!-- Menu overlay -->
+    <div id="menu-overlay" style="display: none;">
+        <div class="search-modal">
+            <h2>📑 Obsah</h2>
+            <div id="menu-content"></div>
+            <button id="menu-close-btn">Zavřít</button>
         </div>
     </div>
 
@@ -512,6 +545,140 @@ body {
 
 #search-close-btn:hover {
     background: #1e4f8a;
+}
+
+/* AI Summary & Menu close buttons */
+#ai-summary-close-btn, #menu-close-btn {
+    background: #2563a6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 15px;
+}
+
+#ai-summary-close-btn:hover, #menu-close-btn:hover {
+    background: #1e4f8a;
+}
+
+/* AI Summary result styling */
+.ai-summary-result {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #2563a6;
+}
+
+.ai-summary-result h3 {
+    color: #2563a6;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.ai-summary-result h4 {
+    color: #333;
+    margin-top: 15px;
+    margin-bottom: 8px;
+    font-size: 15px;
+}
+
+.ai-summary-result ul {
+    margin-left: 20px;
+    margin-bottom: 10px;
+}
+
+.ai-summary-result li {
+    margin: 5px 0;
+    color: #555;
+    line-height: 1.5;
+}
+
+/* Menu item styling */
+.menu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    margin: 8px 0;
+    background: #f5f5f5;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.menu-item:hover {
+    background: #e0e0e0;
+    border-left-color: #2563a6;
+    transform: translateX(2px);
+}
+
+.menu-item-text {
+    flex: 1;
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+.menu-item-page {
+    font-size: 13px;
+    color: #2563a6;
+    font-weight: bold;
+    background: rgba(37, 99, 166, 0.1);
+    padding: 4px 10px;
+    border-radius: 12px;
+    margin-left: 10px;
+}
+
+/* Menu content scrolling */
+#menu-content {
+    max-height: 400px;
+    overflow-y: auto;
+    margin: 15px 0;
+}
+
+#menu-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+#menu-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#menu-content::-webkit-scrollbar-thumb {
+    background: #2563a6;
+    border-radius: 4px;
+}
+
+#menu-content::-webkit-scrollbar-thumb:hover {
+    background: #1e4f8a;
+}
+
+/* AI summary content scrolling */
+#ai-summary-content {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+#ai-summary-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+#ai-summary-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#ai-summary-content::-webkit-scrollbar-thumb {
+    background: #2563a6;
+    border-radius: 4px;
+}
+
+#ai-summary-content::-webkit-scrollbar-thumb:hover {
+    background: #1e4f8a;
 }'''
 
     def _get_js(self):
@@ -527,6 +694,7 @@ const thumbnails = $('.thumbnail');
 
 // Toolbar buttons
 const searchBtn = $('#search-btn');
+const menuBtn = $('#menu-btn');
 const zoomInBtn = $('#zoom-in-btn');
 const zoomOutBtn = $('#zoom-out-btn');
 const prevPageBtn = $('#prev-page-btn');
@@ -535,6 +703,16 @@ const firstPageBtn = $('#first-page-btn');
 const lastPageBtn = $('#last-page-btn');
 const shareBtn = $('#share-btn');
 const fullscreenBtn = $('#fullscreen-btn');
+const downloadPdfBtn = $('#download-pdf-btn');
+const aiSummaryBtn = $('#ai-summary-btn');
+
+// Overlays
+const aiSummaryOverlay = $('#ai-summary-overlay');
+const aiSummaryContent = $('#ai-summary-content');
+const aiSummaryCloseBtn = $('#ai-summary-close-btn');
+const menuOverlay = $('#menu-overlay');
+const menuContent = $('#menu-content');
+const menuCloseBtn = $('#menu-close-btn');
 
 // Search elements
 const searchOverlay = $('#search-overlay');
@@ -761,21 +939,60 @@ lastPageBtn.click(function() {
 });
 
 shareBtn.click(function() {
+    const currentPage = flipbook.turn('page');
+    const shareUrl = window.location.href.split('#')[0] + '#page=' + currentPage;
+
     if (navigator.share) {
         navigator.share({
-            title: document.title,
-            text: 'Podívejte se na tento flipbook',
-            url: window.location.href
-        }).catch(() => {});
+            title: document.title + ' - Stránka ' + currentPage,
+            text: 'Podívejte se na tento zpravodaj (stránka ' + currentPage + ')',
+            url: shareUrl
+        }).then(() => {
+            showShareNotification('Sdíleno!');
+        }).catch(() => {
+            // User cancelled, do nothing
+        });
     } else {
         // Fallback: copy to clipboard
-        navigator.clipboard.writeText(window.location.href).then(() => {
-            alert('Odkaz zkopírován do schránky!');
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            showShareNotification('Odkaz zkopírován do schránky! 📋');
         }).catch(() => {
-            alert('URL: ' + window.location.href);
+            // Show URL in a better way
+            prompt('Zkopírujte tento odkaz:', shareUrl);
         });
     }
 });
+
+function showShareNotification(message) {
+    const notification = $('<div></div>')
+        .text(message)
+        .css({
+            position: 'fixed',
+            top: '80px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#2563a6',
+            color: 'white',
+            padding: '12px 24px',
+            borderRadius: '6px',
+            fontSize: '14px',
+            zIndex: 10000,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            opacity: 0,
+            transition: 'opacity 0.3s'
+        });
+
+    $('body').append(notification);
+
+    // Fade in
+    setTimeout(() => notification.css('opacity', 1), 10);
+
+    // Fade out and remove
+    setTimeout(() => {
+        notification.css('opacity', 0);
+        setTimeout(() => notification.remove(), 300);
+    }, 2500);
+}
 
 fullscreenBtn.click(function() {
     const elem = document.documentElement;
@@ -799,6 +1016,189 @@ fullscreenBtn.click(function() {
         $(this).find('i').removeClass('fa-compress').addClass('fa-expand');
     }
 });
+
+// Download PDF button
+downloadPdfBtn.click(function() {
+    // Trigger download of original PDF (if available in same directory)
+    const pdfFilename = document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase() + '.pdf';
+
+    // Try to download using <a> tag for better download behavior
+    const link = document.createElement('a');
+    link.href = pdfFilename;
+    link.download = pdfFilename;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+
+// AI Summary button
+aiSummaryBtn.click(function() {
+    aiSummaryOverlay.show();
+    generateAISummary();
+});
+
+aiSummaryCloseBtn.click(function() {
+    aiSummaryOverlay.hide();
+});
+
+aiSummaryOverlay.click(function(e) {
+    if (e.target === this) {
+        aiSummaryOverlay.hide();
+    }
+});
+
+// Menu button
+menuBtn.click(function() {
+    menuOverlay.show();
+    generateSmartIndex();
+});
+
+// Menu button - generates smart index from headings
+function generateSmartIndex() {
+    if (!searchData) {
+        menuContent.html('<p>Obsah není dostupný</p>');
+        return;
+    }
+
+    const headings = [];
+
+    // Extract headings from each page (lines with ALL CAPS or ending with :)
+    Object.entries(searchData.pages).forEach(([pageNum, text]) => {
+        const lines = text.split('\\n');
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            // Detect headings: ALL CAPS lines > 5 chars, or lines ending with :
+            if ((trimmed === trimmed.toUpperCase() && trimmed.length > 5 && trimmed.length < 100) ||
+                (trimmed.endsWith(':') && trimmed.length > 10 && trimmed.length < 100)) {
+                headings.push({
+                    text: trimmed.replace(':', ''),
+                    page: parseInt(pageNum)
+                });
+            }
+        });
+    });
+
+    if (headings.length === 0) {
+        menuContent.html('<p>Nenalezeny žádné nadpisy</p>');
+        return;
+    }
+
+    // Remove duplicates
+    const unique = headings.filter((h, i, self) =>
+        i === self.findIndex((t) => t.text === h.text)
+    );
+
+    // Generate HTML
+    const html = unique.slice(0, 20).map(h => `
+        <div class="menu-item" onclick="goToPageFromMenu(${h.page})">
+            <div class="menu-item-text">${h.text}</div>
+            <div class="menu-item-page">Strana ${h.page}</div>
+        </div>
+    `).join('');
+
+    menuContent.html(html);
+}
+
+function goToPageFromMenu(page) {
+    flipbook.turn('page', page);
+    menuOverlay.hide();
+}
+
+menuCloseBtn.click(function() {
+    menuOverlay.hide();
+});
+
+menuOverlay.click(function(e) {
+    if (e.target === this) {
+        menuOverlay.hide();
+    }
+});
+
+// Generate AI Summary using Claude/ChatGPT
+async function generateAISummary() {
+    if (!searchData) {
+        aiSummaryContent.html('<p style="color: red;">Text zpravodaje není dostupný</p>');
+        return;
+    }
+
+    // Collect all text
+    let allText = '';
+    Object.entries(searchData.pages).forEach(([pageNum, text]) => {
+        allText += `\\n\\n=== Stránka ${pageNum} ===\\n${text}`;
+    });
+
+    // For now, create a simple summary (you can add API call to ChatGPT/Claude later)
+    try {
+        // Option 1: Client-side summary (simple)
+        const summary = createSimpleSummary(allText);
+
+        aiSummaryContent.html(`
+            <div class="ai-summary-result">
+                <h3>📝 Shrnutí nejdůležitějších témat:</h3>
+                ${summary}
+                <hr>
+                <p style="font-size: 12px; color: #666; margin-top: 20px;">
+                    💡 <strong>Tip:</strong> Pro pokročilé AI shrnutí s ChatGPT/Claude kontaktujte správce.<br>
+                    Aktuálně zobrazeno automatické shrnutí založené na OCR textu.
+                </p>
+            </div>
+        `);
+
+        // TODO: Add real AI API call
+        // const response = await fetch('YOUR_AI_API_ENDPOINT', {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify({ text: allText })
+        // });
+        // const aiResult = await response.json();
+
+    } catch (error) {
+        aiSummaryContent.html(`<p style="color: red;">Chyba při generování shrnutí: ${error.message}</p>`);
+    }
+}
+
+function createSimpleSummary(text) {
+    // Extract headings and key topics
+    const lines = text.split('\\n');
+    const topics = [];
+    const numbers = [];
+
+    lines.forEach(line => {
+        const trimmed = line.trim();
+
+        // Find headings (ALL CAPS)
+        if (trimmed === trimmed.toUpperCase() && trimmed.length > 10 && trimmed.length < 100) {
+            topics.push(trimmed);
+        }
+
+        // Find numbers (statistics)
+        const numberMatches = trimmed.match(/\\d+\\s*(tun|mil|Kč|stran|dětí|občan|procent|%)/gi);
+        if (numberMatches) {
+            numbers.push(trimmed);
+        }
+    });
+
+    let html = '<ul style="text-align: left;">';
+
+    // Add unique topics
+    const uniqueTopics = [...new Set(topics)].slice(0, 8);
+    uniqueTopics.forEach(topic => {
+        html += `<li><strong>${topic}</strong></li>`;
+    });
+
+    html += '</ul>';
+
+    if (numbers.length > 0) {
+        html += '<h4>📊 Klíčová čísla:</h4><ul style="text-align: left;">';
+        numbers.slice(0, 5).forEach(num => {
+            html += `<li>${num}</li>`;
+        });
+        html += '</ul>';
+    }
+
+    return html;
+}
 
 // Thumbnail click handlers
 thumbnails.click(function() {

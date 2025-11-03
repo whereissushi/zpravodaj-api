@@ -61,6 +61,10 @@ def convert():
             # Add search data
             zip_file.writestr('search_data.json', result['search_data'])
 
+            # Add original PDF for download
+            safe_pdf_name = safe_title + '.pdf'
+            zip_file.writestr(safe_pdf_name, result['pdf'])
+
         # Get ZIP bytes
         zip_buffer.seek(0)
 
