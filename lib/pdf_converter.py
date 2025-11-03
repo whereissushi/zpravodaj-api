@@ -8,6 +8,8 @@ import io
 import fitz  # PyMuPDF
 from pathlib import Path
 from PIL import Image
+import pytesseract
+import json
 
 
 class PDFToFlipbook:
@@ -23,21 +25,30 @@ class PDFToFlipbook:
         self.title = title
         self.pages_images = []  # Full size JPEGs
         self.thumb_images = []  # Thumbnails
+        self.page_texts = {}  # OCR extracted text
 
     def convert(self):
         """
         Main conversion function - returns dict with all assets
 
         Returns:
-            dict with keys: 'html', 'css', 'js', 'pages', 'thumbs'
+            dict with keys: 'html', 'css', 'js', 'pages', 'thumbs', 'search_data'
         """
         # Convert PDF to images
         self._convert_pdf_to_images()
+
+        # Extract text with OCR
+        self._extract_text_ocr()
 
         # Generate HTML/CSS/JS
         html = self._generate_html(len(self.pages_images))
         css = self._get_css()
         js = self._get_js()
+
+        # Generate search data JSON
+        search_data = json.dumps({
+            "pages": self.page_texts
+        }, ensure_ascii=False, indent=2)
 
         return {
             'html': html,
@@ -45,6 +56,7 @@ class PDFToFlipbook:
             'js': js,
             'pages': self.pages_images,  # List of bytes (JPEG)
             'thumbs': self.thumb_images,  # List of bytes (JPEG)
+            'search_data': search_data,  # JSON string
             'page_count': len(self.pages_images)
         }
 
@@ -76,6 +88,18 @@ class PDFToFlipbook:
             self.thumb_images.append(thumb_bytes.getvalue())
 
         pdf_document.close()
+
+    def _extract_text_ocr(self):
+        """Extract text from page images using OCR"""
+        for i, page_bytes in enumerate(self.pages_images, start=1):
+            try:
+                img = Image.open(io.BytesIO(page_bytes))
+                text = pytesseract.image_to_string(img, lang='ces')
+                self.page_texts[str(i)] = text.strip()
+                print(f"  OCR stránka {i}/{len(self.pages_images)}")
+            except Exception as e:
+                print(f"  Varování: OCR selhalo na stránce {i}: {e}")
+                self.page_texts[str(i)] = ""
 
     def _generate_html(self, page_count):
         """Generate HTML content"""
@@ -498,6 +522,20 @@ let zoomActive = false;
 let zoomClickX = 0;
 let zoomClickY = 0;
 
+// Search data
+let searchData = null;
+
+// Load search data
+fetch('search_data.json')
+    .then(response => response.json())
+    .then(data => {
+        searchData = data;
+        console.log('Search data loaded:', Object.keys(data.pages).length, 'pages');
+    })
+    .catch(error => {
+        console.warn('Search data not available:', error);
+    });
+
 // Initialize turn.js
 $(document).ready(function() {
     flipbook.turn({
@@ -576,16 +614,50 @@ searchInput.on('input', function() {
 });
 
 function performSearch(query) {
-    // Simple search in page numbers (you can enhance this with OCR data)
-    searchResults.html('<p>Vyhledávání zatím nepodporuje fulltextové vyhledávání. Použijte číselné vyhledávání stránek.</p>');
+    if (!searchData || !query) {
+        searchResults.html('<p>Zadejte hledaný text</p>');
+        return;
+    }
 
-    // Try to parse as page number
-    const pageNum = parseInt(query);
-    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+    const results = [];
+    const lowerQuery = query.toLowerCase();
+
+    // Search through all pages
+    Object.entries(searchData.pages).forEach(([pageNum, text]) => {
+        const lowerText = text.toLowerCase();
+        if (lowerText.includes(lowerQuery)) {
+            // Find snippet around the match
+            const index = lowerText.indexOf(lowerQuery);
+            const start = Math.max(0, index - 50);
+            const end = Math.min(text.length, index + query.length + 50);
+            let snippet = text.substring(start, end);
+
+            // Add ellipsis
+            if (start > 0) snippet = '...' + snippet;
+            if (end < text.length) snippet = snippet + '...';
+
+            // Highlight the match
+            const regex = new RegExp(`(${query})`, 'gi');
+            snippet = snippet.replace(regex, '<span class="search-highlight">$1</span>');
+
+            results.push({
+                page: parseInt(pageNum),
+                snippet: snippet
+            });
+        }
+    });
+
+    if (results.length === 0) {
+        searchResults.html('<p>Nenalezeny žádné výsledky</p>');
+    } else {
         searchResults.html(`
-            <div class="search-result-item" onclick="goToPage(${pageNum})">
-                <div class="search-result-page">Přejít na stránku ${pageNum}</div>
-            </div>
+            <p>Nalezeno <strong>${results.length}</strong> výsledků:</p>
+            ${results.map(r => `
+                <div class="search-result-item" onclick="goToPage(${r.page})">
+                    <div class="search-result-page">Stránka ${r.page}</div>
+                    <div class="search-result-snippet">${r.snippet}</div>
+                </div>
+            `).join('')}
         `);
     }
 }

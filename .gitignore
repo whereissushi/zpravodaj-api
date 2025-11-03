@@ -47,3 +47,13 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Desktop app files (not needed for Railway)
+Zpravodaje/
+*.bat
+*.txt
+*.png
+*.iss
+installer_output/
+poppler/
+zpravodaj-api/

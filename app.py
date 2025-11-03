@@ -58,6 +58,9 @@ def convert():
             for i, thumb_bytes in enumerate(result['thumbs'], start=1):
                 zip_file.writestr(f'files/thumb/{i}.jpg', thumb_bytes)
 
+            # Add search data
+            zip_file.writestr('search_data.json', result['search_data'])
+
         # Get ZIP bytes
         zip_buffer.seek(0)
 
