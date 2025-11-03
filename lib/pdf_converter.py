@@ -138,6 +138,8 @@ class PDFToFlipbook:
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js"></script>
+    <!-- QR Code generator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
     <script>
@@ -195,15 +197,16 @@ class PDFToFlipbook:
             </button>
         </div>
 
-        <div id="flipbook-viewer">
-            <div id="flipbook">
-                {''.join(f'<div class="page"><img src="files/pages/{i}.jpg" alt="Stránka {i}"></div>' for i in range(1, page_count + 1))}
+        <!-- Thumbnail sidebar (toggled by menu button) -->
+        <div id="thumbnail-sidebar" class="thumbnail-sidebar-hidden">
+            <div id="thumbnail-sidebar-content">
+                {''.join(f'<div class="thumbnail-item" data-page="{i}"><img src="files/thumb/{i}.jpg" alt="Stránka {i}"><span class="thumb-page-num">{i}</span></div>' for i in range(1, page_count + 1))}
             </div>
         </div>
 
-        <div id="thumbnail-bar">
-            <div id="thumbnail-container">
-                {''.join(f'<img src="files/thumb/{i}.jpg" class="thumbnail" data-page="{i}" alt="Stránka {i}">' for i in range(1, page_count + 1))}
+        <div id="flipbook-viewer">
+            <div id="flipbook">
+                {''.join(f'<div class="page"><img src="files/pages/{i}.jpg" alt="Stránka {i}"></div>' for i in range(1, page_count + 1))}
             </div>
         </div>
     </div>
@@ -238,6 +241,29 @@ class PDFToFlipbook:
             <h2>📑 Obsah</h2>
             <div id="menu-content"></div>
             <button id="menu-close-btn">Zavřít</button>
+        </div>
+    </div>
+
+    <!-- Share overlay with QR code -->
+    <div id="share-overlay" style="display: none;">
+        <div class="search-modal share-modal">
+            <h2>Sdílet</h2>
+            <div id="share-content">
+                <div id="qr-code-container" style="text-align: center; margin: 20px 0;">
+                    <div id="qrcode"></div>
+                    <p style="margin-top: 10px; font-size: 12px; color: #666;">QRCode</p>
+                </div>
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Sdílet:</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="share-url-input" readonly style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        <button id="copy-url-btn" style="padding: 10px 20px; background: #2563a6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                            Kopírovat
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <button id="share-close-btn">Zavřít</button>
         </div>
     </div>
 
@@ -376,36 +402,82 @@ body {
     cursor: grabbing;
 }
 
-#thumbnail-bar {
-    background: #f5f5f5;
+/* Thumbnail sidebar (left side) */
+#thumbnail-sidebar {
+    position: fixed;
+    left: 0;
+    top: 48px; /* Below toolbar */
+    width: 180px;
+    height: calc(100vh - 48px);
+    background: #f8f9fa;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    z-index: 50;
+    transition: transform 0.3s ease;
+}
+
+#thumbnail-sidebar.thumbnail-sidebar-hidden {
+    transform: translateX(-100%);
+}
+
+#thumbnail-sidebar-content {
     padding: 10px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    border-top: 1px solid #ddd;
 }
 
-#thumbnail-container {
-    display: flex;
-    gap: 10px;
-    width: max-content;
-}
-
-.thumbnail {
-    height: 100px;
+.thumbnail-item {
+    position: relative;
+    margin-bottom: 15px;
     cursor: pointer;
     border: 3px solid transparent;
-    transition: border-color 0.3s, transform 0.3s;
+    border-radius: 4px;
+    overflow: hidden;
+    transition: all 0.2s;
+    background: white;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.thumbnail:hover {
-    transform: scale(1.05);
+.thumbnail-item:hover {
+    transform: translateX(5px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
-.thumbnail.active {
+.thumbnail-item.active {
     border-color: #2563a6;
-    box-shadow: 0 4px 8px rgba(37, 99, 166, 0.3);
+    background: #e3f2fd;
+}
+
+.thumbnail-item img {
+    width: 100%;
+    display: block;
+}
+
+.thumb-page-num {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: rgba(37, 99, 166, 0.9);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+#thumbnail-sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+#thumbnail-sidebar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#thumbnail-sidebar::-webkit-scrollbar-thumb {
+    background: #2563a6;
+    border-radius: 4px;
+}
+
+#thumbnail-sidebar::-webkit-scrollbar-thumb:hover {
+    background: #1e4f8a;
 }
 
 @media (max-width: 768px) {
@@ -424,8 +496,8 @@ body {
         padding: 15px 10px;
     }
 
-    .thumbnail {
-        height: 80px;
+    #thumbnail-sidebar {
+        width: 140px;
     }
 
     #page-container {
@@ -690,7 +762,8 @@ const isMobile = window.innerWidth <= 768;
 // Elements
 const flipbook = $('#flipbook');
 const currentPageSpan = $('#current-page');
-const thumbnails = $('.thumbnail');
+const thumbnailSidebar = $('#thumbnail-sidebar');
+const thumbnailItems = $('.thumbnail-item');
 
 // Toolbar buttons
 const searchBtn = $('#search-btn');
@@ -713,6 +786,10 @@ const aiSummaryCloseBtn = $('#ai-summary-close-btn');
 const menuOverlay = $('#menu-overlay');
 const menuContent = $('#menu-content');
 const menuCloseBtn = $('#menu-close-btn');
+const shareOverlay = $('#share-overlay');
+const shareUrlInput = $('#share-url-input');
+const copyUrlBtn = $('#copy-url-btn');
+const shareCloseBtn = $('#share-close-btn');
 
 // Search elements
 const searchOverlay = $('#search-overlay');
@@ -771,13 +848,13 @@ $(document).ready(function() {
 
 // Helper functions
 function updateThumbnails(page) {
-    thumbnails.removeClass('active');
-    thumbnails.eq(page - 1).addClass('active');
+    thumbnailItems.removeClass('active');
+    thumbnailItems.eq(page - 1).addClass('active');
 
     // Auto-scroll to active thumbnail
-    const activeThumbnail = thumbnails.eq(page - 1)[0];
+    const activeThumbnail = thumbnailItems.eq(page - 1)[0];
     if (activeThumbnail) {
-        activeThumbnail.scrollIntoView({behavior: 'smooth', block: 'nearest', inline: 'center'});
+        activeThumbnail.scrollIntoView({behavior: 'smooth', block: 'nearest'});
     }
 }
 
@@ -938,61 +1015,60 @@ lastPageBtn.click(function() {
     flipbook.turn('page', flipbook.turn('pages'));
 });
 
+// Share button - show modal with QR code
+let qrCodeInstance = null;
+
 shareBtn.click(function() {
     const currentPage = flipbook.turn('page');
     const shareUrl = window.location.href.split('#')[0] + '#page=' + currentPage;
 
-    if (navigator.share) {
-        navigator.share({
-            title: document.title + ' - Stránka ' + currentPage,
-            text: 'Podívejte se na tento zpravodaj (stránka ' + currentPage + ')',
-            url: shareUrl
-        }).then(() => {
-            showShareNotification('Sdíleno!');
-        }).catch(() => {
-            // User cancelled, do nothing
-        });
-    } else {
-        // Fallback: copy to clipboard
-        navigator.clipboard.writeText(shareUrl).then(() => {
-            showShareNotification('Odkaz zkopírován do schránky! 📋');
-        }).catch(() => {
-            // Show URL in a better way
-            prompt('Zkopírujte tento odkaz:', shareUrl);
-        });
-    }
+    // Update URL input
+    shareUrlInput.val(shareUrl);
+
+    // Clear previous QR code
+    $('#qrcode').empty();
+
+    // Generate new QR code
+    qrCodeInstance = new QRCode(document.getElementById("qrcode"), {
+        text: shareUrl,
+        width: 200,
+        height: 200,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+    });
+
+    // Show modal
+    shareOverlay.show();
 });
 
-function showShareNotification(message) {
-    const notification = $('<div></div>')
-        .text(message)
-        .css({
-            position: 'fixed',
-            top: '80px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: '#2563a6',
-            color: 'white',
-            padding: '12px 24px',
-            borderRadius: '6px',
-            fontSize: '14px',
-            zIndex: 10000,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-            opacity: 0,
-            transition: 'opacity 0.3s'
-        });
+// Copy URL button
+copyUrlBtn.click(function() {
+    const url = shareUrlInput.val();
+    shareUrlInput.select();
 
-    $('body').append(notification);
+    navigator.clipboard.writeText(url).then(() => {
+        // Change button text temporarily
+        const originalText = copyUrlBtn.text();
+        copyUrlBtn.text('Zkopírováno! ✓');
+        setTimeout(() => {
+            copyUrlBtn.text(originalText);
+        }, 2000);
+    }).catch(() => {
+        alert('Nepodařilo se zkopírovat odkaz');
+    });
+});
 
-    // Fade in
-    setTimeout(() => notification.css('opacity', 1), 10);
+// Share close button
+shareCloseBtn.click(function() {
+    shareOverlay.hide();
+});
 
-    // Fade out and remove
-    setTimeout(() => {
-        notification.css('opacity', 0);
-        setTimeout(() => notification.remove(), 300);
-    }, 2500);
-}
+shareOverlay.click(function(e) {
+    if (e.target === this) {
+        shareOverlay.hide();
+    }
+});
 
 fullscreenBtn.click(function() {
     const elem = document.documentElement;
@@ -1048,10 +1124,9 @@ aiSummaryOverlay.click(function(e) {
     }
 });
 
-// Menu button
+// Menu button - toggle thumbnail sidebar
 menuBtn.click(function() {
-    menuOverlay.show();
-    generateSmartIndex();
+    thumbnailSidebar.toggleClass('thumbnail-sidebar-hidden');
 });
 
 // Menu button - generates smart index from headings
@@ -1201,7 +1276,7 @@ function createSimpleSummary(text) {
 }
 
 // Thumbnail click handlers
-thumbnails.click(function() {
+thumbnailItems.click(function() {
     const page = $(this).data('page');
     flipbook.turn('page', page);
 });
@@ -1228,24 +1303,5 @@ $(document).keydown(function(e) {
             flipbook.turn('page', flipbook.turn('pages'));
             e.preventDefault();
             break;
-    }
-});
-
-// Zoom on click - click on page to zoom to that point
-flipbook.on('click', '.page', function(e) {
-    if (zoomLevel === 1) {
-        // Zoom in to 2x at click position
-        const rect = this.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-        zoomLevel = 2;
-        flipbook.turn('stop').css({
-            transform: `scale(2)`,
-            transformOrigin: `${x}% ${y}%`
-        });
-    } else {
-        // Zoom out to 1x
-        applyZoom(1);
     }
 });'''
