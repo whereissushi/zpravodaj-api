@@ -50,6 +50,13 @@ class PDFToFlipbook:
             "pages": self.page_texts
         }, ensure_ascii=False, indent=2)
 
+        # Debug: Print sample of search data
+        if self.page_texts:
+            first_page = list(self.page_texts.keys())[0]
+            sample_text = self.page_texts[first_page][:100] if self.page_texts[first_page] else "EMPTY"
+            print(f"Search data sample (page {first_page}): {sample_text}...")
+            print(f"Total pages with text: {len([t for t in self.page_texts.values() if t])}")
+
         return {
             'html': html,
             'css': css,
@@ -204,7 +211,7 @@ class PDFToFlipbook:
     <script>
         const totalPages = {page_count};
     </script>
-    <script src="js/flipbook.js"></script>
+    <script src="js/flipbook.js?v=2"></script>
 </body>
 </html>'''
 
@@ -543,13 +550,22 @@ let searchData = null;
 
 // Load search data
 fetch('search_data.json')
-    .then(response => response.json())
+    .then(response => {
+        console.log('search_data.json response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         searchData = data;
-        console.log('Search data loaded:', Object.keys(data.pages).length, 'pages');
+        console.log('Search data loaded successfully!');
+        console.log('Total pages:', Object.keys(data.pages).length);
+        console.log('Sample page 1 length:', data.pages['1'] ? data.pages['1'].length : 'N/A');
     })
     .catch(error => {
-        console.warn('Search data not available:', error);
+        console.error('Failed to load search data:', error);
+        searchData = null;
     });
 
 // Initialize turn.js
@@ -630,10 +646,20 @@ searchInput.on('input', function() {
 });
 
 function performSearch(query) {
-    if (!searchData || !query) {
+    console.log('performSearch called with:', query);
+    console.log('searchData available:', !!searchData);
+
+    if (!searchData) {
+        searchResults.html('<p style="color: red;">Vyhledávací data se nenačetla. Zkontrolujte konzoli.</p>');
+        return;
+    }
+
+    if (!query) {
         searchResults.html('<p>Zadejte hledaný text</p>');
         return;
     }
+
+    console.log('Searching in', Object.keys(searchData.pages).length, 'pages');
 
     const results = [];
     const lowerQuery = query.toLowerCase();
