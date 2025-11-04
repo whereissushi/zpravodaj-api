@@ -564,8 +564,12 @@ body {
     background: #5a5a5a;
 }
 
-/* Search overlay */
-#search-overlay {
+/* All overlays */
+#search-overlay,
+#zoom-menu-overlay,
+#share-overlay,
+#ai-summary-overlay,
+#menu-overlay {
     position: fixed;
     top: 0;
     left: 0;
