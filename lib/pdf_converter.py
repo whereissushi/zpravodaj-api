@@ -136,10 +136,10 @@ class PDFToFlipbook:
     <title>{self.title}</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Local JS libraries for offline support -->
+    <script src="js/jquery-3.6.0.min.js"></script>
     <script src="js/turn.min.js"></script>
-    <!-- QR Code generator -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="js/qrcode.min.js"></script>
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
     <script>
