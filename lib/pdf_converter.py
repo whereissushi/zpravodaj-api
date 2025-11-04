@@ -358,6 +358,12 @@ body {
     width: 80%;
     height: 85vh;
     margin: 0 auto;
+    cursor: grab;
+    user-select: none;
+}
+
+#flipbook:active {
+    cursor: grabbing;
 }
 
 #flipbook .page {
@@ -827,7 +833,15 @@ $(document).ready(function() {
         duration: 600,
         acceleration: true,
         display: isMobile ? 'single' : 'double',
+        // Enable drag-to-flip - can grab and drag page corners/edges
         when: {
+            turning: function(e, page, view) {
+                // Disable turning if zoomed in
+                if (zoomActive) {
+                    e.preventDefault();
+                    return false;
+                }
+            },
             turned: function(e, page) {
                 currentPageSpan.text(page);
                 updateThumbnails(page);
@@ -844,6 +858,71 @@ $(document).ready(function() {
     // Update page display
     currentPageSpan.text(1);
     updateThumbnails(1);
+
+    // Enable swipe gestures for mobile and desktop
+    let touchStartX = 0;
+    let touchEndX = 0;
+    let isDragging = false;
+
+    // Touch events (mobile)
+    flipbook.on('touchstart', function(e) {
+        if (!zoomActive) {
+            touchStartX = e.changedTouches[0].screenX;
+            isDragging = true;
+        }
+    });
+
+    flipbook.on('touchend', function(e) {
+        if (!zoomActive && isDragging) {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+            isDragging = false;
+        }
+    });
+
+    // Mouse events (desktop drag)
+    let mouseDownTime = 0;
+    let mouseDownPos = { x: 0, y: 0 };
+
+    flipbook.on('mousedown', function(e) {
+        if (!zoomActive) {
+            touchStartX = e.pageX;
+            mouseDownTime = Date.now();
+            mouseDownPos = { x: e.pageX, y: e.pageY };
+            isDragging = true;
+            $(this).css('cursor', 'grabbing');
+        }
+    });
+
+    $(document).on('mouseup', function(e) {
+        if (isDragging && !zoomActive) {
+            touchEndX = e.pageX;
+            const timeDiff = Date.now() - mouseDownTime;
+            const distance = Math.abs(touchEndX - touchStartX);
+
+            // Only trigger swipe if moved more than threshold
+            // If it's a quick click with minimal movement, don't swipe
+            if (distance > 20 && timeDiff < 500) {
+                handleSwipe();
+            }
+
+            isDragging = false;
+            flipbook.css('cursor', 'grab');
+        }
+    });
+
+    function handleSwipe() {
+        const swipeThreshold = 80; // minimum distance for page turn
+        const distance = touchEndX - touchStartX;
+
+        if (distance < -swipeThreshold) {
+            // Swipe left - next page
+            flipbook.turn('next');
+        } else if (distance > swipeThreshold) {
+            // Swipe right - previous page
+            flipbook.turn('previous');
+        }
+    }
 });
 
 // Helper functions
@@ -967,35 +1046,53 @@ zoomOutBtn.click(function() {
     applyZoom(zoomLevel - 0.25);
 });
 
-// Click-to-zoom on pages
+// Click-to-zoom on pages (only if not dragging)
+let clickStartTime = 0;
+let clickStartPos = { x: 0, y: 0 };
+
+flipbook.on('mousedown', '.page img', function(e) {
+    clickStartTime = Date.now();
+    clickStartPos = { x: e.pageX, y: e.pageY };
+});
+
 flipbook.on('click', '.page img', function(e) {
-    if (!zoomActive) {
-        // Get click position relative to the image
-        const offset = $(this).offset();
-        const x = e.pageX - offset.left;
-        const y = e.pageY - offset.top;
-        const width = $(this).width();
-        const height = $(this).height();
+    const timeDiff = Date.now() - clickStartTime;
+    const distanceMoved = Math.sqrt(
+        Math.pow(e.pageX - clickStartPos.x, 2) +
+        Math.pow(e.pageY - clickStartPos.y, 2)
+    );
 
-        // Calculate transform origin as percentage
-        const originX = (x / width) * 100;
-        const originY = (y / height) * 100;
+    // Only zoom if it's a real click (not a drag)
+    // Quick click with minimal movement
+    if (timeDiff < 300 && distanceMoved < 10) {
+        if (!zoomActive) {
+            // Get click position relative to the image
+            const offset = $(this).offset();
+            const x = e.pageX - offset.left;
+            const y = e.pageY - offset.top;
+            const width = $(this).width();
+            const height = $(this).height();
 
-        // Zoom to 2x at click point
-        zoomLevel = 2;
-        flipbook.turn('stop').css({
-            transform: `scale(2)`,
-            transformOrigin: `${originX}% ${originY}%`
-        });
-        zoomActive = true;
-    } else {
-        // Reset zoom
-        zoomLevel = 1;
-        flipbook.turn('stop').css({
-            transform: `scale(1)`,
-            transformOrigin: 'center center'
-        });
-        zoomActive = false;
+            // Calculate transform origin as percentage
+            const originX = (x / width) * 100;
+            const originY = (y / height) * 100;
+
+            // Zoom to 2x at click point
+            zoomLevel = 2;
+            flipbook.turn('stop').css({
+                transform: `scale(2)`,
+                transformOrigin: `${originX}% ${originY}%`
+            });
+            zoomActive = true;
+        } else {
+            // Reset zoom
+            zoomLevel = 1;
+            flipbook.turn('stop').css({
+                transform: `scale(1)`,
+                transformOrigin: 'center center'
+            });
+            zoomActive = false;
+        }
     }
 });
 
