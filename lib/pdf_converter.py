@@ -389,12 +389,7 @@ body {
     width: 80%;
     height: 85vh;
     margin: 0 auto;
-    cursor: grab;
     user-select: none;
-}
-
-#flipbook:active {
-    cursor: grabbing;
 }
 
 #flipbook .page {
@@ -977,69 +972,96 @@ $(document).ready(function() {
     currentPageSpan.text(1);
     updateThumbnails(1);
 
-    // Enable swipe gestures for mobile and desktop
-    let touchStartX = 0;
-    let touchEndX = 0;
-    let isDragging = false;
+    // Turn.js already has built-in drag-to-flip functionality
+    // Just make sure it works on mobile with touch events
+    if (isMobile) {
+        let touchStartX = 0;
 
-    // Touch events (mobile)
-    flipbook.on('touchstart', function(e) {
-        if (!zoomActive) {
-            touchStartX = e.changedTouches[0].screenX;
-            isDragging = true;
-        }
-    });
-
-    flipbook.on('touchend', function(e) {
-        if (!zoomActive && isDragging) {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-            isDragging = false;
-        }
-    });
-
-    // Mouse events (desktop drag)
-    let mouseDownTime = 0;
-    let mouseDownPos = { x: 0, y: 0 };
-
-    flipbook.on('mousedown', function(e) {
-        if (!zoomActive) {
-            touchStartX = e.pageX;
-            mouseDownTime = Date.now();
-            mouseDownPos = { x: e.pageX, y: e.pageY };
-            isDragging = true;
-            $(this).css('cursor', 'grabbing');
-        }
-    });
-
-    $(document).on('mouseup', function(e) {
-        if (isDragging && !zoomActive) {
-            touchEndX = e.pageX;
-            const timeDiff = Date.now() - mouseDownTime;
-            const distance = Math.abs(touchEndX - touchStartX);
-
-            // Only trigger swipe if moved more than threshold
-            // If it's a quick click with minimal movement, don't swipe
-            if (distance > 20 && timeDiff < 500) {
-                handleSwipe();
+        flipbook.on('touchstart', function(e) {
+            if (!zoomActive) {
+                touchStartX = e.touches[0].clientX;
             }
+        });
 
-            isDragging = false;
-            flipbook.css('cursor', 'grab');
+        flipbook.on('touchend', function(e) {
+            if (!zoomActive) {
+                const touchEndX = e.changedTouches[0].clientX;
+                const swipeDistance = touchEndX - touchStartX;
+
+                // Swipe gestures for mobile
+                if (swipeDistance < -50) {
+                    flipbook.turn('next');
+                } else if (swipeDistance > 50) {
+                    flipbook.turn('previous');
+                }
+            }
+        });
+    }
+
+    // Zoom menu handlers (must be inside ready to ensure elements exist)
+    const zoomOptionBtnsReady = $('.zoom-option-btn');
+
+    zoomInBtn.click(function() {
+        // Update current zoom display
+        currentZoomDisplay.text(Math.round(zoomLevel * 100) + '%');
+
+        // Update slider position
+        zoomSlider.val(Math.round(zoomLevel * 100));
+
+        // Update active button
+        updateZoomActiveButton(zoomLevel);
+
+        // Show zoom menu
+        zoomMenuOverlay.show();
+    });
+
+    zoomOutBtn.click(function() {
+        applyZoom(zoomLevel - 0.25);
+        updateZoomDisplay();
+    });
+
+    zoomMenuCloseBtn.click(function() {
+        zoomMenuOverlay.hide();
+    });
+
+    zoomMenuOverlay.click(function(e) {
+        if (e.target === this) {
+            zoomMenuOverlay.hide();
         }
     });
 
-    function handleSwipe() {
-        const swipeThreshold = 80; // minimum distance for page turn
-        const distance = touchEndX - touchStartX;
+    // Preset zoom buttons
+    zoomOptionBtnsReady.click(function() {
+        const zoom = parseFloat($(this).data('zoom'));
+        applyZoom(zoom);
+        updateZoomDisplay();
 
-        if (distance < -swipeThreshold) {
-            // Swipe left - next page
-            flipbook.turn('next');
-        } else if (distance > swipeThreshold) {
-            // Swipe right - previous page
-            flipbook.turn('previous');
-        }
+        // Update active state
+        zoomOptionBtnsReady.removeClass('active');
+        $(this).addClass('active');
+    });
+
+    // Zoom slider
+    zoomSlider.on('input', function() {
+        const zoom = parseInt($(this).val()) / 100;
+        applyZoom(zoom);
+        updateZoomDisplay();
+        updateZoomActiveButton(zoom);
+    });
+
+    function updateZoomDisplay() {
+        currentZoomDisplay.text(Math.round(zoomLevel * 100) + '%');
+        zoomSlider.val(Math.round(zoomLevel * 100));
+        updateZoomActiveButton(zoomLevel);
+    }
+
+    function updateZoomActiveButton(zoom) {
+        zoomOptionBtnsReady.removeClass('active');
+        zoomOptionBtnsReady.each(function() {
+            if (Math.abs(parseFloat($(this).data('zoom')) - zoom) < 0.01) {
+                $(this).addClass('active');
+            }
+        });
     }
 });
 
@@ -1157,71 +1179,6 @@ function goToPage(page) {
     searchOverlay.hide();
     searchInput.val('');
     searchResults.html('');
-}
-
-// Zoom buttons - zoom-in opens menu, zoom-out zooms out
-zoomInBtn.click(function() {
-    // Update current zoom display
-    currentZoomDisplay.text(Math.round(zoomLevel * 100) + '%');
-
-    // Update slider position
-    zoomSlider.val(Math.round(zoomLevel * 100));
-
-    // Update active button
-    updateZoomActiveButton(zoomLevel);
-
-    // Show zoom menu
-    zoomMenuOverlay.show();
-});
-
-zoomOutBtn.click(function() {
-    applyZoom(zoomLevel - 0.25);
-    updateZoomDisplay();
-});
-
-// Zoom menu handlers
-zoomMenuCloseBtn.click(function() {
-    zoomMenuOverlay.hide();
-});
-
-zoomMenuOverlay.click(function(e) {
-    if (e.target === this) {
-        zoomMenuOverlay.hide();
-    }
-});
-
-// Preset zoom buttons
-zoomOptionBtns.click(function() {
-    const zoom = parseFloat($(this).data('zoom'));
-    applyZoom(zoom);
-    updateZoomDisplay();
-
-    // Update active state
-    zoomOptionBtns.removeClass('active');
-    $(this).addClass('active');
-});
-
-// Zoom slider
-zoomSlider.on('input', function() {
-    const zoom = parseInt($(this).val()) / 100;
-    applyZoom(zoom);
-    updateZoomDisplay();
-    updateZoomActiveButton(zoom);
-});
-
-function updateZoomDisplay() {
-    currentZoomDisplay.text(Math.round(zoomLevel * 100) + '%');
-    zoomSlider.val(Math.round(zoomLevel * 100));
-    updateZoomActiveButton(zoomLevel);
-}
-
-function updateZoomActiveButton(zoom) {
-    zoomOptionBtns.removeClass('active');
-    zoomOptionBtns.each(function() {
-        if (Math.abs(parseFloat($(this).data('zoom')) - zoom) < 0.01) {
-            $(this).addClass('active');
-        }
-    });
 }
 
 // Click-to-zoom on pages (only if not dragging)
