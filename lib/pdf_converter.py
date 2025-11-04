@@ -267,6 +267,37 @@ class PDFToFlipbook:
         </div>
     </div>
 
+    <!-- Zoom menu overlay -->
+    <div id="zoom-menu-overlay" style="display: none;">
+        <div class="search-modal zoom-menu-modal">
+            <h2>🔍 Přiblížení</h2>
+            <div id="zoom-menu-content">
+                <p style="text-align: center; margin-bottom: 20px; color: #666;">
+                    Aktuální: <strong id="current-zoom-display">100%</strong>
+                </p>
+                <div class="zoom-options">
+                    <button class="zoom-option-btn" data-zoom="0.5">50%</button>
+                    <button class="zoom-option-btn" data-zoom="0.75">75%</button>
+                    <button class="zoom-option-btn active" data-zoom="1">100%</button>
+                    <button class="zoom-option-btn" data-zoom="1.25">125%</button>
+                    <button class="zoom-option-btn" data-zoom="1.5">150%</button>
+                    <button class="zoom-option-btn" data-zoom="2">200%</button>
+                    <button class="zoom-option-btn" data-zoom="2.5">250%</button>
+                    <button class="zoom-option-btn" data-zoom="3">300%</button>
+                </div>
+                <div style="margin-top: 20px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 500; color: #333;">Vlastní:</label>
+                    <input type="range" id="zoom-slider" min="50" max="300" value="100" step="25" style="width: 100%;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 5px;">
+                        <span>50%</span>
+                        <span>300%</span>
+                    </div>
+                </div>
+            </div>
+            <button id="zoom-menu-close-btn">Zavřít</button>
+        </div>
+    </div>
+
     <script>
         const totalPages = {page_count};
         // Embedded search data for offline use
@@ -757,6 +788,88 @@ body {
 
 #ai-summary-content::-webkit-scrollbar-thumb:hover {
     background: #1e4f8a;
+}
+
+/* Zoom menu styling */
+.zoom-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.zoom-option-btn {
+    padding: 12px 16px;
+    background: #f5f5f5;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+    transition: all 0.2s;
+}
+
+.zoom-option-btn:hover {
+    background: #e3f2fd;
+    border-color: #2563a6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.zoom-option-btn.active {
+    background: #2563a6;
+    color: white;
+    border-color: #2563a6;
+}
+
+#zoom-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    background: #ddd;
+    border-radius: 5px;
+    outline: none;
+}
+
+#zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #2563a6;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#zoom-slider::-webkit-slider-thumb:hover {
+    background: #1e4f8a;
+    transform: scale(1.2);
+}
+
+#zoom-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #2563a6;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+#zoom-menu-close-btn {
+    background: #2563a6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 15px;
+}
+
+#zoom-menu-close-btn:hover {
+    background: #1e4f8a;
 }'''
 
     def _get_js(self):
@@ -796,6 +909,11 @@ const shareOverlay = $('#share-overlay');
 const shareUrlInput = $('#share-url-input');
 const copyUrlBtn = $('#copy-url-btn');
 const shareCloseBtn = $('#share-close-btn');
+const zoomMenuOverlay = $('#zoom-menu-overlay');
+const zoomMenuCloseBtn = $('#zoom-menu-close-btn');
+const zoomSlider = $('#zoom-slider');
+const currentZoomDisplay = $('#current-zoom-display');
+const zoomOptionBtns = $('.zoom-option-btn');
 
 // Search elements
 const searchOverlay = $('#search-overlay');
@@ -943,6 +1061,9 @@ function applyZoom(scale) {
         transform: `scale(${zoomLevel})`,
         transformOrigin: 'center center'
     });
+
+    // Update zoom active flag
+    zoomActive = zoomLevel > 1;
 }
 
 // Toolbar button handlers
@@ -1038,13 +1159,70 @@ function goToPage(page) {
     searchResults.html('');
 }
 
+// Zoom buttons - zoom-in opens menu, zoom-out zooms out
 zoomInBtn.click(function() {
-    applyZoom(zoomLevel + 0.25);
+    // Update current zoom display
+    currentZoomDisplay.text(Math.round(zoomLevel * 100) + '%');
+
+    // Update slider position
+    zoomSlider.val(Math.round(zoomLevel * 100));
+
+    // Update active button
+    updateZoomActiveButton(zoomLevel);
+
+    // Show zoom menu
+    zoomMenuOverlay.show();
 });
 
 zoomOutBtn.click(function() {
     applyZoom(zoomLevel - 0.25);
+    updateZoomDisplay();
 });
+
+// Zoom menu handlers
+zoomMenuCloseBtn.click(function() {
+    zoomMenuOverlay.hide();
+});
+
+zoomMenuOverlay.click(function(e) {
+    if (e.target === this) {
+        zoomMenuOverlay.hide();
+    }
+});
+
+// Preset zoom buttons
+zoomOptionBtns.click(function() {
+    const zoom = parseFloat($(this).data('zoom'));
+    applyZoom(zoom);
+    updateZoomDisplay();
+
+    // Update active state
+    zoomOptionBtns.removeClass('active');
+    $(this).addClass('active');
+});
+
+// Zoom slider
+zoomSlider.on('input', function() {
+    const zoom = parseInt($(this).val()) / 100;
+    applyZoom(zoom);
+    updateZoomDisplay();
+    updateZoomActiveButton(zoom);
+});
+
+function updateZoomDisplay() {
+    currentZoomDisplay.text(Math.round(zoomLevel * 100) + '%');
+    zoomSlider.val(Math.round(zoomLevel * 100));
+    updateZoomActiveButton(zoomLevel);
+}
+
+function updateZoomActiveButton(zoom) {
+    zoomOptionBtns.removeClass('active');
+    zoomOptionBtns.each(function() {
+        if (Math.abs(parseFloat($(this).data('zoom')) - zoom) < 0.01) {
+            $(this).addClass('active');
+        }
+    });
+}
 
 // Click-to-zoom on pages (only if not dragging)
 let clickStartTime = 0;
