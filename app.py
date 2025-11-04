@@ -53,6 +53,11 @@ def convert():
             # Add JS
             zip_file.writestr('js/flipbook.js', result['js'])
 
+            # Add turn.js library (local copy for offline use)
+            turn_js_path = 'static/turn.min.js'
+            with open(turn_js_path, 'rb') as f:
+                zip_file.writestr('js/turn.min.js', f.read())
+
             # Add page images
             for i, page_bytes in enumerate(result['pages'], start=1):
                 zip_file.writestr(f'files/pages/{i}.jpg', page_bytes)
