@@ -382,6 +382,13 @@ body {
     cursor: move;
 }
 
+#zoom-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 #flipbook {
     position: relative;
     /* Dynamic sizing handled by JavaScript */
@@ -1016,8 +1023,8 @@ $(document).ready(function() {
         // Scale based on viewport - better for all screen sizes
         if (viewportWidth <= 1920) {
             // Smaller screens (1920x1080 and below)
-            bookWidth = Math.min(1400, viewportWidth * 0.85);
-            bookHeight = Math.min(900, viewportHeight * 0.90);
+            bookWidth = Math.min(1600, viewportWidth * 0.95);
+            bookHeight = Math.min(950, viewportHeight * 0.95);
         } else {
             // Larger screens (1440p and above)
             bookWidth = Math.min(1400, viewportWidth * 0.7);
@@ -1079,8 +1086,8 @@ $(document).ready(function() {
             newBookHeight = Math.min(600, newViewportHeight * 0.8);
         } else {
             if (newViewportWidth <= 1920) {
-                newBookWidth = Math.min(1400, newViewportWidth * 0.85);
-                newBookHeight = Math.min(900, newViewportHeight * 0.90);
+                newBookWidth = Math.min(1600, newViewportWidth * 0.95);
+                newBookHeight = Math.min(950, newViewportHeight * 0.95);
             } else {
                 newBookWidth = Math.min(1400, newViewportWidth * 0.7);
                 newBookHeight = Math.min(990, newViewportHeight * 0.85);
@@ -1254,12 +1261,6 @@ function applyZoom(scale) {
     const viewer = $('#flipbook-viewer');
     const flipbookElement = $('#flipbook');
 
-    // Apply transform to flipbook
-    flipbookElement.css({
-        transform: `scale(${zoomLevel})`,
-        transformOrigin: 'center center'
-    });
-
     // Update zoom active flag
     zoomActive = zoomLevel > 1;
 
@@ -1267,12 +1268,50 @@ function applyZoom(scale) {
     if (zoomActive) {
         viewer.addClass('zoomed');
 
+        // Create a container div for scrolling if it doesn't exist
+        if (!$('#zoom-container').length) {
+            flipbookElement.wrap('<div id="zoom-container"></div>');
+        }
+
+        const container = $('#zoom-container');
+
+        // Calculate the scaled dimensions
+        const baseWidth = flipbookElement.width();
+        const baseHeight = flipbookElement.height();
+        const scaledWidth = baseWidth * zoomLevel;
+        const scaledHeight = baseHeight * zoomLevel;
+
+        // Set container size to create scrollable area with extra padding
+        container.css({
+            width: scaledWidth + 500,
+            height: scaledHeight + 500,
+            position: 'relative',
+            padding: '250px'
+        });
+
+        // Apply transform to flipbook
+        flipbookElement.css({
+            transform: `scale(${zoomLevel})`,
+            transformOrigin: 'center center',
+            position: 'absolute',
+            top: '250px',
+            left: '250px'
+        });
+
         // Enable scrolling on viewer
         viewer.css({
             'overflow': 'auto',
             'overflow-x': 'auto',
             'overflow-y': 'auto'
         });
+
+        // Scroll to center initially
+        setTimeout(() => {
+            const scrollLeft = (container.width() - viewer.width()) / 2;
+            const scrollTop = (container.height() - viewer.height()) / 2;
+            viewer.scrollLeft(scrollLeft);
+            viewer.scrollTop(scrollTop);
+        }, 0);
 
         // Enable panning if pan tool is active
         if (isPanMode) {
@@ -1283,6 +1322,18 @@ function applyZoom(scale) {
         viewer.css({
             'overflow': 'hidden'
         });
+
+        // Reset zoom container
+        if ($('#zoom-container').length) {
+            $('#zoom-container').replaceWith(flipbookElement);
+            flipbookElement.css({
+                transform: 'scale(1)',
+                transformOrigin: 'center center',
+                position: 'relative',
+                top: '',
+                left: ''
+            });
+        }
 
         disablePanning();
 
