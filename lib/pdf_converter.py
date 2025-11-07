@@ -318,6 +318,7 @@ body {
     padding: 8px 15px;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 5px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     z-index: 100;
@@ -365,6 +366,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+    margin: 0;
 }
 
 #flipbook-viewer.pan-mode {
@@ -383,12 +386,11 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 100%;
-    min-height: 100%;
+    width: 100%;
+    height: 100%;
 }
 
 #flipbook {
-    margin: 0 auto;
     position: relative;
     /* Dynamic sizing handled by JavaScript */
 }
@@ -397,7 +399,8 @@ body {
     width: 50%;
     height: 100%;
     background-color: white;
-    background-size: 100% 100%;
+    background-size: cover;
+    background-position: center;
     pointer-events: auto;
     user-select: none;
 }
