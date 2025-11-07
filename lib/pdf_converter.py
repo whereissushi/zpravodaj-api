@@ -382,14 +382,6 @@ body {
     cursor: move;
 }
 
-#flipbook-scroll-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-}
-
 #flipbook {
     position: relative;
     /* Dynamic sizing handled by JavaScript */
@@ -1024,8 +1016,8 @@ $(document).ready(function() {
         // Scale based on viewport - better for all screen sizes
         if (viewportWidth <= 1920) {
             // Smaller screens (1920x1080 and below)
-            bookWidth = Math.min(1200, viewportWidth * 0.75);
-            bookHeight = Math.min(800, viewportHeight * 0.85);
+            bookWidth = Math.min(1400, viewportWidth * 0.85);
+            bookHeight = Math.min(900, viewportHeight * 0.90);
         } else {
             // Larger screens (1440p and above)
             bookWidth = Math.min(1400, viewportWidth * 0.7);
@@ -1087,8 +1079,8 @@ $(document).ready(function() {
             newBookHeight = Math.min(600, newViewportHeight * 0.8);
         } else {
             if (newViewportWidth <= 1920) {
-                newBookWidth = Math.min(1200, newViewportWidth * 0.75);
-                newBookHeight = Math.min(800, newViewportHeight * 0.85);
+                newBookWidth = Math.min(1400, newViewportWidth * 0.85);
+                newBookHeight = Math.min(900, newViewportHeight * 0.90);
             } else {
                 newBookWidth = Math.min(1400, newViewportWidth * 0.7);
                 newBookHeight = Math.min(990, newViewportHeight * 0.85);
@@ -1275,30 +1267,6 @@ function applyZoom(scale) {
     if (zoomActive) {
         viewer.addClass('zoomed');
 
-        // Calculate the actual scaled dimensions
-        const baseWidth = flipbookElement.width();
-        const baseHeight = flipbookElement.height();
-        const scaledWidth = baseWidth * zoomLevel;
-        const scaledHeight = baseHeight * zoomLevel;
-
-        // Create a wrapper div if it doesn't exist
-        if (!$('#flipbook-scroll-wrapper').length) {
-            flipbookElement.wrap('<div id="flipbook-scroll-wrapper"></div>');
-        }
-
-        const wrapper = $('#flipbook-scroll-wrapper');
-
-        // Set the wrapper size to create scrollable area
-        // Add extra padding for scrolling beyond the edges
-        wrapper.css({
-            'width': (scaledWidth + 400) + 'px',
-            'height': (scaledHeight + 400) + 'px',
-            'position': 'relative',
-            'display': 'flex',
-            'align-items': 'center',
-            'justify-content': 'center'
-        });
-
         // Enable scrolling on viewer
         viewer.css({
             'overflow': 'auto',
@@ -1315,15 +1283,6 @@ function applyZoom(scale) {
         viewer.css({
             'overflow': 'hidden'
         });
-
-        // Reset wrapper if exists
-        const wrapper = $('#flipbook-scroll-wrapper');
-        if (wrapper.length) {
-            wrapper.css({
-                'width': '',
-                'height': ''
-            });
-        }
 
         disablePanning();
 
