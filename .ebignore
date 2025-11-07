@@ -1,0 +1,9 @@
+.git
+.gitignore
+*.pyc
+__pycache__
+venv/
+.env
+.vercel
+.DS_Store
+node_modules/

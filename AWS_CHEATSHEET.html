@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Migration - Cheat Sheet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .card h3 {
+            color: #764ba2;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        .status {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .status strong {
+            color: #667eea;
+        }
+        ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        .price {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .warning {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .comparison {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+        .comparison th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        .comparison td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        .comparison tr:hover {
+            background: #f8f9fa;
+        }
+        .emoji {
+            font-size: 1.3em;
+            margin-right: 5px;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        .steps {
+            counter-reset: step;
+        }
+        .steps li {
+            counter-increment: step;
+            margin-bottom: 12px;
+        }
+        .steps li::marker {
+            content: "▶ ";
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 AWS Migration - Cheat Sheet pro Meeting</h1>
+
+        <div class="grid">
+            <!-- Současný stav -->
+            <div class="card">
+                <h2>📍 Co máme TEĎ</h2>
+                <div class="status">
+                    <strong>Platform:</strong> Railway<br>
+                    <strong>Tech:</strong> Flask + PyMuPDF + Tesseract OCR<br>
+                    <strong>Deployment:</strong> Gunicorn WSGI<br>
+                    <strong>Output:</strong> ZIP download (ne S3!)
+                </div>
+                <h3>Jak to funguje:</h3>
+                <ul>
+                    <li>User uploadne PDF (až 50 MB)</li>
+                    <li><strong>PyMuPDF</strong> → JPEG obrázky (150 DPI)</li>
+                    <li><strong>Tesseract OCR</strong> → extrahuje text (pro vyhledávání)</li>
+                    <li>Vygeneruje HTML flipbook s search funkcí</li>
+                    <li>Vrátí ZIP ke stažení</li>
+                </ul>
+                <p style="margin-top: 15px;"><span class="highlight">Zero AWS závislostí</span> - žádné S3, žádné credentials</p>
+
+                <h3 style="margin-top: 20px;">Python balíčky (requirements.txt):</h3>
+                <ul style="font-size: 0.9em;">
+                    <li><code>PyMuPDF</code> - PDF → obrázky (pure Python)</li>
+                    <li><code>Pillow</code> - Image processing (thumbnails)</li>
+                    <li><code>pytesseract</code> - Python wrapper pro Tesseract OCR</li>
+                    <li><code>Flask</code> - Web framework (API endpoint)</li>
+                    <li><code>Flask-CORS</code> - Cross-origin requests</li>
+                    <li><code>gunicorn</code> - WSGI server (produkce)</li>
+                </ul>
+
+                <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 15px;">
+                    <strong>⚠️ DŮLEŽITÉ:</strong> <code>pytesseract</code> potřebuje <strong>Tesseract OCR binary</strong> nainstalovaný v systému!
+                    Railway/EB/ECS musí mít: <code>apt-get install tesseract-ocr tesseract-ocr-ces</code>
+                </div>
+            </div>
+
+            <!-- Proč AWS -->
+            <div class="card">
+                <h2>🤔 Proč se bavíme o AWS?</h2>
+                <ul>
+                    <li><strong>Railway cena:</strong> <span class="price">$5-20/měsíc</span></li>
+                    <li>Chceme vyzkoušet alternativy</li>
+                    <li>Možná lepší škálování</li>
+                    <li>Kontrola nad infrastrukturou</li>
+                </ul>
+                <h3>Co jsme zkoušeli:</h3>
+                <ul>
+                    <li><span class="warning">Vercel FAIL</span> - 4.5 MB limit</li>
+                    <li><span class="highlight">Railway WIN</span> - neomezený upload</li>
+                    <li>Původně byl S3 upload (kód je v <code>lib/s3_uploader.py</code>), ale přešli jsme na ZIP</li>
+                </ul>
+            </div>
+
+            <!-- Elastic Beanstalk -->
+            <div class="card">
+                <h2><span class="emoji">⭐</span> Varianta 1: Elastic Beanstalk</h2>
+                <p><strong>Tldr:</strong> AWS verze Railway/Heroku</p>
+
+                <h3>Výhody:</h3>
+                <ul>
+                    <li><span class="highlight">ZERO změn kódu</span></li>
+                    <li>Funguje hned po deploy</li>
+                    <li>Load balancer included</li>
+                    <li>Auto-scaling</li>
+                </ul>
+
+                <h3>Setup (3 příkazy):</h3>
+                <ul class="steps">
+                    <li><code>eb init -p python-3.11</code> - inicializace projektu</li>
+                    <li><code>eb create --instance-type t3.medium</code> - vytvoření prostředí (EC2 + LB)</li>
+                    <li><code>eb deploy</code> - deploy nové verze</li>
+                </ul>
+
+                <h3>Co dělá každý parametr:</h3>
+                <ul style="font-size: 0.9em;">
+                    <li><code>-p python-3.11</code> - použít Python 3.11 platform</li>
+                    <li><code>--instance-type t3.medium</code> - 2 vCPU, 4GB RAM (kvůli OCR)</li>
+                    <li><code>--region eu-central-1</code> - Frankfurt datacenter</li>
+                    <li><code>--timeout 10</code> - 10 min timeout pro velké PDF</li>
+                </ul>
+
+                <h3>Co se nainstaluje automaticky:</h3>
+                <div style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                    ✅ Python 3.11<br>
+                    ✅ <code>requirements.txt</code> balíčky (pip install)<br>
+                    ⚠️ <strong>POTŘEBUJEME DODAT:</strong> Tesseract OCR binary!
+                </div>
+
+                <h3 style="margin-top: 15px;">Řešení pro Tesseract:</h3>
+                <p style="font-size: 0.9em;">Vytvořili jsme <code>.ebextensions/01_gunicorn.config</code> - EB spustí:</p>
+                <code style="display: block; background: #f4f4f4; padding: 10px; margin-top: 5px;">apt-get install -y tesseract-ocr tesseract-ocr-ces</code>
+
+                <h3>Cena:</h3>
+                <p><span class="price">$50/měsíc</span> (24/7) nebo <span class="price">$0.50</span> pro 2h test</p>
+
+                <p style="margin-top: 15px; background: #e7f3ff; padding: 10px; border-radius: 5px;">
+                    <strong>Říct na meetingu:</strong> "Nejrychlejší varianta, zero změn kódu, ale musíme doinstalovat Tesseract OCR přes .ebextensions"
+                </p>
+            </div>
+
+            <!-- Lambda -->
+            <div class="card">
+                <h2><span class="emoji">💰</span> Varianta 2: Lambda</h2>
+                <p><strong>Tldr:</strong> Platíš jen za použití (serverless)</p>
+
+                <h3>Výhody:</h3>
+                <ul>
+                    <li><span class="price">$0.20 za 1000 konverzí</span></li>
+                    <li>Platíš jen když někdo konvertuje</li>
+                    <li>Auto-scaling do tisíců requestů</li>
+                </ul>
+
+                <h3>Nevýhody:</h3>
+                <ul>
+                    <li><span class="warning">6 MB upload limit</span></li>
+                    <li>Musíme předělat workflow na S3</li>
+                    <li>Složitější implementace</li>
+                </ul>
+
+                <h3>Nový workflow (museli bychom):</h3>
+                <ul class="steps">
+                    <li>User dostane presigned URL</li>
+                    <li>Upload PDF přímo do S3</li>
+                    <li>Lambda se triggeruje</li>
+                    <li>Stáhne PDF z S3, konvertuje</li>
+                    <li>Upload ZIP do S3</li>
+                    <li>Vrátí download URL</li>
+                </ul>
+
+                <p style="margin-top: 15px; background: #fff3cd; padding: 10px; border-radius: 5px;">
+                    <strong>Říct na meetingu:</strong> "Nejlevnější, ale museli bychom předělat API a přidat S3 storage"
+                </p>
+            </div>
+
+            <!-- ECS Fargate -->
+            <div class="card">
+                <h2><span class="emoji">🚀</span> Varianta 3: ECS Fargate</h2>
+                <p><strong>Tldr:</strong> Docker container na AWS (jako Railway)</p>
+
+                <h3>Výhody:</h3>
+                <ul>
+                    <li>Jen přidat <code>Dockerfile</code></li>
+                    <li>Docker-based (známá technologie)</li>
+                    <li>Lepší kontrola než Beanstalk</li>
+                    <li><span class="price">$35/měsíc</span> (levnější než EB)</li>
+                </ul>
+
+                <h3>Co potřebujeme:</h3>
+                <ul class="steps">
+                    <li>Napsat Dockerfile (5 minut)</li>
+                    <li>Push do ECR (AWS Docker registry)</li>
+                    <li>Vytvořit ECS cluster</li>
+                    <li>Deploy task</li>
+                </ul>
+
+                <p style="margin-top: 15px; background: #d4edda; padding: 10px; border-radius: 5px;">
+                    <strong>Říct na meetingu:</strong> "Dobrý kompromis - trochu složitější než EB, ale levnější a máme víc kontroly"
+                </p>
+            </div>
+
+            <!-- Srovnání -->
+            <div class="card full-width">
+                <h2>📊 Srovnání všech možností</h2>
+                <table class="comparison">
+                    <thead>
+                        <tr>
+                            <th>Řešení</th>
+                            <th>Cena/měsíc</th>
+                            <th>Složitost</th>
+                            <th>Upload limit</th>
+                            <th>Změny kódu</th>
+                            <th>Kdy použít</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Railway (teď)</strong></td>
+                            <td class="price">$5-20</td>
+                            <td>⭐ Snadné</td>
+                            <td>Žádný</td>
+                            <td>-</td>
+                            <td>Funguje perfektně</td>
+                        </tr>
+                        <tr style="background: #fff3cd;">
+                            <td><strong>Elastic Beanstalk</strong></td>
+                            <td class="price">$50</td>
+                            <td>⭐ Snadné</td>
+                            <td>Žádný</td>
+                            <td><strong>0 změn</strong></td>
+                            <td><strong>Rychlý test/start</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>ECS Fargate</strong></td>
+                            <td class="price">$35</td>
+                            <td>⭐⭐ Střední</td>
+                            <td>Žádný</td>
+                            <td>Jen Dockerfile</td>
+                            <td>Dlouhodobá produkce</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Lambda</strong></td>
+                            <td class="price">$0.20/1000</td>
+                            <td>⭐⭐⭐ Složité</td>
+                            <td class="warning">6 MB → S3</td>
+                            <td>Přepsat API</td>
+                            <td>Nízký traffic</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Otázky na meeting -->
+            <div class="card">
+                <h2>❓ CO SE ZEPTAT</h2>
+                <h3>1. Budget</h3>
+                <ul>
+                    <li>Kolik můžeme dát měsíčně?</li>
+                    <li>Platíme teď nebo AWS Free Tier?</li>
+                </ul>
+
+                <h3>2. Traffic</h3>
+                <ul>
+                    <li>Kolik konverzí denně očekáváme?</li>
+                    <li>Málo (&lt;10) → Lambda</li>
+                    <li>Hodně (&gt;100) → EB/ECS</li>
+                </ul>
+
+                <h3>3. AWS Setup</h3>
+                <ul>
+                    <li>Už máte AWS účet?</li>
+                    <li>Jaký region? (doporučuji eu-central-1)</li>
+                    <li>Kdo bude mít admin?</li>
+                </ul>
+
+                <h3>4. Storage</h3>
+                <ul>
+                    <li>Chcete ukládat do S3 trvale?</li>
+                    <li>Nebo jen ZIP download? (jako teď)</li>
+                </ul>
+            </div>
+
+            <!-- Doporučení -->
+            <div class="card">
+                <h2>💡 MÉ DOPORUČENÍ</h2>
+
+                <h3>Pro tento týden (TEST):</h3>
+                <p style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <strong>→ Elastic Beanstalk</strong><br>
+                    • 3 příkazy, 30 minut setup<br>
+                    • Cena: $0.50 pro 2h test<br>
+                    • Zero změn kódu<br>
+                    • Můžeme ukázat ihned
+                </p>
+
+                <h3>Pro produkci (příští měsíc):</h3>
+                <p style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <strong>→ ECS Fargate</strong><br>
+                    • $35/měsíc (levnější než EB)<br>
+                    • Docker-based<br>
+                    • CI/CD s GitHub Actions<br>
+                    • Lepší kontrola
+                </p>
+
+                <h3>Pokud nízký traffic:</h3>
+                <p style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <strong>→ Lambda</strong><br>
+                    • $0.20/1000 konverzí<br>
+                    • Ale musíme předělat API<br>
+                    • + S3 storage
+                </p>
+            </div>
+
+            <!-- Co už máme -->
+            <div class="card full-width">
+                <h2>✅ CO UŽ MÁME PŘIPRAVENÉ</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h3>Hotové soubory:</h3>
+                        <ul>
+                            <li><code>.ebextensions/01_gunicorn.config</code> - EB konfigurace</li>
+                            <li><code>.ebignore</code> - Co neposílat do AWS</li>
+                            <li><code>app.py</code> - Flask API (funguje všude)</li>
+                            <li><code>wsgi.py</code> - WSGI entry point</li>
+                            <li><code>requirements.txt</code> - Python závislosti</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>Existující (nepoužívané) kód:</h3>
+                        <ul>
+                            <li><code>lib/s3_uploader.py</code> - S3 upload (připravený pro Lambda)</li>
+                            <li><code>lib/db.py</code> - Neon Postgres logging</li>
+                        </ul>
+                        <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                            Tyto soubory máme v repozitáři z původního plánu.
+                            Můžeme je znovu aktivovat, pokud půjdeme na Lambda + S3.
+                        </p>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 25px;">📦 Co se instaluje na AWS (automaticky):</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 15px;">
+                    <div style="background: #e7f3ff; padding: 15px; border-radius: 8px;">
+                        <strong>Python balíčky:</strong>
+                        <ul style="font-size: 0.85em; margin-top: 8px;">
+                            <li><code>PyMuPDF==1.23.8</code></li>
+                            <li><code>Pillow==10.1.0</code></li>
+                            <li><code>pytesseract==0.3.10</code></li>
+                            <li><code>Flask==3.0.0</code></li>
+                            <li><code>Flask-CORS==4.0.0</code></li>
+                            <li><code>gunicorn==21.2.0</code></li>
+                        </ul>
+                    </div>
+                    <div style="background: #fff3cd; padding: 15px; border-radius: 8px;">
+                        <strong>Systémové balíčky:</strong>
+                        <ul style="font-size: 0.85em; margin-top: 8px;">
+                            <li><code>tesseract</code> - OCR engine</li>
+                            <li><code>tesseract-langpack-ces</code> - Čeština</li>
+                        </ul>
+                        <p style="margin-top: 10px; font-size: 0.8em; color: #856404;">
+                            ⚠️ Instaluje se přes <code>.ebextensions/01_gunicorn.config</code>
+                        </p>
+                    </div>
+                    <div style="background: #d4edda; padding: 15px; border-radius: 8px;">
+                        <strong>AWS poskytuje:</strong>
+                        <ul style="font-size: 0.85em; margin-top: 8px;">
+                            <li>Python 3.11 runtime</li>
+                            <li>Gunicorn WSGI server</li>
+                            <li>Nginx reverse proxy</li>
+                            <li>Load balancer</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rychlý start -->
+            <div class="card full-width">
+                <h2>🏃 RYCHLÝ START - Elastic Beanstalk (můžeme udělat dnes)</h2>
+
+                <h3>Kde to spustit:</h3>
+                <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <strong>1. Otevři WSL terminál:</strong> Win+R → <code>wsl</code><br>
+                    <strong>2. Přejdi do projektu:</strong> <code>cd /mnt/c/Users/Daniel/Zpravodaj</code>
+                </div>
+
+                <h3>Příkazy krok za krokem:</h3>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <div style="margin-bottom: 20px;">
+                        <strong>1.</strong> <code>pip install awsebcli</code>
+                        <p style="font-size: 0.85em; margin: 5px 0 0 25px; color: #666;">
+                            → Nainstaluje <code>eb</code> nástroj pro Elastic Beanstalk
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <strong>2.</strong> <code>aws configure</code>
+                        <p style="font-size: 0.85em; margin: 5px 0 0 25px; color: #666;">
+                            → Zadáš AWS credentials (Access Key + Secret)<br>
+                            → Region: <code>eu-central-1</code> (Frankfurt)<br>
+                            → Output: <code>json</code>
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <strong>3.</strong> <code>eb init -p python-3.11 zpravodaj-api --region eu-central-1</code>
+                        <p style="font-size: 0.85em; margin: 5px 0 0 25px; color: #666;">
+                            → <code>-p python-3.11</code> = použij Python 3.11 platform<br>
+                            → <code>zpravodaj-api</code> = jméno aplikace<br>
+                            → <code>--region eu-central-1</code> = Frankfurt datacenter<br>
+                            → Vytvoří <code>.elasticbeanstalk/config.yml</code>
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <strong>4.</strong> <code>eb create zpravodaj-test --instance-type t3.medium --timeout 10</code>
+                        <p style="font-size: 0.85em; margin: 5px 0 0 25px; color: #666;">
+                            → <code>zpravodaj-test</code> = jméno prostředí<br>
+                            → <code>--instance-type t3.medium</code> = 2 vCPU, 4GB RAM (kvůli OCR)<br>
+                            → <code>--timeout 10</code> = 10 minut timeout<br>
+                            → Vytvoří EC2 instanci, load balancer, security groups<br>
+                            → Nainstaluje Python balíčky + Tesseract<br>
+                            → <strong>Trvá ~5-10 minut</strong>
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <strong>5.</strong> <code>eb open</code>
+                        <p style="font-size: 0.85em; margin: 5px 0 0 25px; color: #666;">
+                            → Otevře URL v prohlížeči<br>
+                            → Formát: <code>http://zpravodaj-test.eu-central-1.elasticbeanstalk.com</code>
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <strong>6.</strong> Test API:
+                        <pre style="background: #fff; padding: 10px; border-radius: 5px; overflow-x: auto; margin: 5px 0 0 25px;"><code>curl -X POST http://zpravodaj-test.eu-central-1.elasticbeanstalk.com/api/convert \
+  -F "pdf=@test.pdf" \
+  -F "title=Test Newsletter" \
+  -o output.zip</code></pre>
+                        <p style="font-size: 0.85em; margin: 5px 0 0 25px; color: #666;">
+                            → Uploadne test PDF<br>
+                            → Stáhne ZIP s flipbookem<br>
+                            → Pokud vrátí ZIP → <strong>funguje! ✅</strong>
+                        </p>
+                    </div>
+
+                    <div>
+                        <strong>7.</strong> <code>eb terminate zpravodaj-test</code>
+                        <p style="font-size: 0.85em; margin: 5px 0 0 25px; color: #666;">
+                            → Smaže všechno (EC2, LB, security groups)<br>
+                            → Přestaneš platit
+                        </p>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 20px;">Další užitečné příkazy:</h3>
+                <ul style="font-family: monospace; font-size: 0.9em;">
+                    <li><code>eb status</code> - zobrazí stav prostředí (running/updating/terminated)</li>
+                    <li><code>eb logs</code> - stáhne logy z EC2 instance</li>
+                    <li><code>eb logs --stream</code> - živé logy (jako tail -f)</li>
+                    <li><code>eb deploy</code> - deploy nové verze (po změně kódu)</li>
+                    <li><code>eb ssh</code> - SSH do EC2 instance (pro debugging)</li>
+                </ul>
+
+                <p style="margin-top: 15px; text-align: center; font-size: 1.1em;">
+                    <strong>Celkový čas:</strong> 30 minut | <strong>Cena testu:</strong> <span class="price">~$0.50</span> (2 hodiny)
+                </p>
+            </div>
+        </div>
+
+        <div class="card" style="text-align: center; margin-top: 20px;">
+            <h2>🎯 TL;DR pro meeting</h2>
+            <p style="font-size: 1.2em; line-height: 1.8;">
+                Máme <strong>Flask app na Railway</strong> ($5-20/měsíc), funguje perfektně.<br>
+                Chceme vyzkoušet AWS? → <strong>Elastic Beanstalk</strong> (zero změn kódu, 30 min setup).<br>
+                Pro produkci? → <strong>ECS Fargate</strong> ($35/měsíc, Docker-based).<br>
+                Nízký traffic? → <strong>Lambda</strong> ($0.20/1000, ale musíme předělat API).<br><br>
+                <span style="background: #667eea; color: white; padding: 10px 20px; border-radius: 5px; display: inline-block; margin-top: 10px;">
+                    <strong>Doporučuji:</strong> Test EB tento týden → rozhodnutí na základě výsledků
+                </span>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

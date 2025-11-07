@@ -380,9 +380,18 @@ body {
     align-items: center;
     justify-content: center;
     position: relative;
-    overflow: hidden;
+    overflow: auto; /* Allow scrolling when zoomed */
     background: #e8e8e8;
     padding: 20px;
+    cursor: grab;
+}
+
+#flipbook-viewer:active {
+    cursor: grabbing;
+}
+
+#flipbook-viewer.zoomed {
+    cursor: move;
 }
 
 #flipbook {
@@ -564,32 +573,32 @@ body {
     background: #5a5a5a;
 }
 
-/* All overlays */
+/* All overlays - Munipolis style (no black background) */
 #search-overlay,
 #zoom-menu-overlay,
 #share-overlay,
 #ai-summary-overlay,
 #menu-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
+    top: 48px; /* Under toolbar */
+    right: 20px;
     z-index: 1000;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-end;
 }
 
 .search-modal {
     background: white;
-    padding: 30px;
-    border-radius: 8px;
-    max-width: 600px;
-    width: 90%;
-    max-height: 80vh;
+    padding: 25px;
+    border-radius: 12px;
+    max-width: 500px;
+    width: auto;
+    min-width: 350px;
+    max-height: calc(100vh - 80px);
     overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
 }
 
 .search-modal h2 {
@@ -950,11 +959,12 @@ $(document).ready(function() {
         duration: 600,
         acceleration: true,
         display: isMobile ? 'single' : 'double',
-        // Enable drag-to-flip - can grab and drag page corners/edges
+        page: 1,
+        // Enable interactive page flipping
         when: {
             turning: function(e, page, view) {
-                // Disable turning if zoomed in
-                if (zoomActive) {
+                // Disable turning if zoomed in or panning
+                if (zoomActive || isPanning) {
                     e.preventDefault();
                     return false;
                 }
@@ -967,6 +977,13 @@ $(document).ready(function() {
                     gtag('event', 'page_turn', {
                         'page_number': page
                     });
+                }
+            },
+            start: function(e, pageObject, corner) {
+                // Prevent drag if zoomed
+                if (zoomActive) {
+                    e.preventDefault();
+                    return false;
                 }
             }
         }
@@ -1090,6 +1107,65 @@ function applyZoom(scale) {
 
     // Update zoom active flag
     zoomActive = zoomLevel > 1;
+
+    // Toggle zoomed class for cursor styling
+    const viewer = $('#flipbook-viewer');
+    if (zoomActive) {
+        viewer.addClass('zoomed');
+        enablePanning();
+    } else {
+        viewer.removeClass('zoomed');
+        disablePanning();
+    }
+}
+
+// Panning support when zoomed
+let isPanning = false;
+let startPanX = 0;
+let startPanY = 0;
+let scrollLeft = 0;
+let scrollTop = 0;
+
+function enablePanning() {
+    const viewer = $('#flipbook-viewer')[0];
+
+    viewer.addEventListener('mousedown', startPan);
+    viewer.addEventListener('mousemove', pan);
+    viewer.addEventListener('mouseup', endPan);
+    viewer.addEventListener('mouseleave', endPan);
+}
+
+function disablePanning() {
+    const viewer = $('#flipbook-viewer')[0];
+
+    viewer.removeEventListener('mousedown', startPan);
+    viewer.removeEventListener('mousemove', pan);
+    viewer.removeEventListener('mouseup', endPan);
+    viewer.removeEventListener('mouseleave', endPan);
+}
+
+function startPan(e) {
+    if (!zoomActive) return;
+    isPanning = true;
+    startPanX = e.pageX - this.offsetLeft;
+    startPanY = e.pageY - this.offsetTop;
+    scrollLeft = this.scrollLeft;
+    scrollTop = this.scrollTop;
+}
+
+function pan(e) {
+    if (!isPanning) return;
+    e.preventDefault();
+    const x = e.pageX - this.offsetLeft;
+    const y = e.pageY - this.offsetTop;
+    const walkX = (x - startPanX) * 1.5;
+    const walkY = (y - startPanY) * 1.5;
+    this.scrollLeft = scrollLeft - walkX;
+    this.scrollTop = scrollTop - walkY;
+}
+
+function endPan() {
+    isPanning = false;
 }
 
 // Toolbar button handlers
