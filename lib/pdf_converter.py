@@ -404,6 +404,12 @@ body {
     user-select: none;
 }
 
+/* Turn.js corner areas - make them bigger */
+.turn-page-wrapper .corner {
+    width: 100px !important;
+    height: 100px !important;
+}
+
 /* Turn.js shadows */
 #flipbook .even .gradient {
     position: absolute;
@@ -1006,7 +1012,7 @@ $(document).ready(function() {
         acceleration: true,
         display: isMobile ? 'single' : 'double',
         page: 1,
-        corners: 'tl,tr,bl,br', // Enable all corners for dragging
+        corners: 'all', // Enable all corners for dragging (larger area)
         when: {
             turning: function(e, page, view) {
                 // Only block turning if actively panning
@@ -1039,8 +1045,67 @@ $(document).ready(function() {
     currentPageSpan.text(1);
     updateThumbnails(1);
 
-    // Turn.js already has built-in drag-to-flip functionality
-    // Just make sure it works on mobile with touch events
+    // Enhanced drag-to-flip functionality for entire page area
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let dragStartTime = 0;
+
+    // Desktop drag-to-flip
+    flipbook.on('mousedown', function(e) {
+        // Skip if pan mode is active
+        if (isPanMode || isPanning) return;
+
+        // Skip if zoomed (unless we want to flip while zoomed)
+        if (zoomActive && !isPanMode) {
+            // Allow flipping even when zoomed if pan mode is off
+        }
+
+        isDragging = true;
+        dragStartX = e.pageX;
+        dragStartY = e.pageY;
+        dragStartTime = new Date().getTime();
+        e.preventDefault();
+    });
+
+    $(document).on('mousemove', function(e) {
+        if (!isDragging || isPanMode || isPanning) return;
+
+        const dragDistance = e.pageX - dragStartX;
+        const dragDistanceY = Math.abs(e.pageY - dragStartY);
+
+        // Only flip if horizontal drag is more than vertical
+        if (Math.abs(dragDistance) > 30 && dragDistanceY < 100) {
+            isDragging = false;
+
+            if (dragDistance < 0) {
+                flipbook.turn('next');
+            } else {
+                flipbook.turn('previous');
+            }
+        }
+    });
+
+    $(document).on('mouseup', function(e) {
+        if (!isDragging) return;
+
+        const dragEndTime = new Date().getTime();
+        const dragDuration = dragEndTime - dragStartTime;
+        const dragDistance = e.pageX - dragStartX;
+
+        // Quick flick gesture
+        if (dragDuration < 300 && Math.abs(dragDistance) > 20) {
+            if (dragDistance < 0) {
+                flipbook.turn('next');
+            } else {
+                flipbook.turn('previous');
+            }
+        }
+
+        isDragging = false;
+    });
+
+    // Mobile touch events
     if (isMobile) {
         let touchStartX = 0;
 
@@ -1207,9 +1272,6 @@ function disablePanning() {
 function startPan(e) {
     // Only allow panning if pan mode is active AND zoomed in
     if (!isPanMode || !zoomActive) return;
-
-    // Don't pan if clicking on the flipbook itself (let turn.js handle it)
-    if ($(e.target).closest('#flipbook').length > 0) return;
 
     isPanning = true;
     startPanX = e.pageX - this.offsetLeft;
