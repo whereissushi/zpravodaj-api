@@ -363,9 +363,9 @@ body {
     align-items: center;
     justify-content: center;
     position: relative;
-    overflow: auto; /* Allow scrolling when zoomed */
+    overflow: hidden; /* Default hidden, auto when zoomed via JS */
     background: #e8e8e8;
-    padding: 20px;
+    padding: 40px; /* More padding for scroll area */
 }
 
 #flipbook-viewer.pan-mode {
@@ -1206,7 +1206,12 @@ function updateThumbnails(page) {
 
 function applyZoom(scale) {
     zoomLevel = Math.max(0.5, Math.min(3, scale));
-    flipbook.turn('stop').css({
+
+    const viewer = $('#flipbook-viewer');
+    const flipbookElement = $('#flipbook');
+
+    // Apply transform to flipbook
+    flipbookElement.css({
         transform: `scale(${zoomLevel})`,
         transformOrigin: 'center center'
     });
@@ -1214,12 +1219,25 @@ function applyZoom(scale) {
     // Update zoom active flag
     zoomActive = zoomLevel > 1;
 
-    // Toggle zoomed class for cursor styling
-    const viewer = $('#flipbook-viewer');
+    // Toggle zoomed class and overflow settings
     if (zoomActive) {
         viewer.addClass('zoomed');
-        // Auto-enable scrolling when zoomed (viewer has overflow: auto)
-        viewer.css('overflow', 'auto');
+        // Important: Set overflow to auto for scrolling
+        viewer.css({
+            'overflow': 'auto',
+            'overflow-x': 'auto',
+            'overflow-y': 'auto'
+        });
+
+        // Make sure the viewer can actually scroll
+        // Add some padding to ensure scrollable area
+        const scaledHeight = flipbookElement.height() * zoomLevel;
+        const scaledWidth = flipbookElement.width() * zoomLevel;
+
+        viewer.css({
+            'min-height': Math.max(viewer.height(), scaledHeight + 100) + 'px',
+            'min-width': Math.max(viewer.width(), scaledWidth + 100) + 'px'
+        });
 
         // Enable panning if pan tool is active
         if (isPanMode) {
@@ -1227,7 +1245,11 @@ function applyZoom(scale) {
         }
     } else {
         viewer.removeClass('zoomed');
-        viewer.css('overflow', 'hidden');
+        viewer.css({
+            'overflow': 'hidden',
+            'min-height': '',
+            'min-width': ''
+        });
         disablePanning();
 
         // If zoom is reset to 1x, also deactivate pan mode
@@ -1237,6 +1259,9 @@ function applyZoom(scale) {
             viewer.removeClass('pan-mode');
         }
     }
+
+    // Stop any turn animation
+    flipbook.turn('stop');
 
     // Update display immediately
     if (typeof updateZoomDisplay === 'function') {
@@ -1252,47 +1277,47 @@ let scrollLeft = 0;
 let scrollTop = 0;
 
 function enablePanning() {
-    const viewer = $('#flipbook-viewer')[0];
+    const viewer = $('#flipbook-viewer');
 
-    viewer.addEventListener('mousedown', startPan);
-    viewer.addEventListener('mousemove', pan);
-    viewer.addEventListener('mouseup', endPan);
-    viewer.addEventListener('mouseleave', endPan);
+    // Use jQuery for better event handling
+    viewer.on('mousedown.pan', function(e) {
+        if (!isPanMode || !zoomActive) return;
+
+        isPanning = true;
+        startPanX = e.clientX;
+        startPanY = e.clientY;
+        scrollLeft = this.scrollLeft;
+        scrollTop = this.scrollTop;
+
+        $(this).css('cursor', 'grabbing');
+        e.preventDefault();
+    });
+
+    viewer.on('mousemove.pan', function(e) {
+        if (!isPanning) return;
+
+        e.preventDefault();
+        const deltaX = e.clientX - startPanX;
+        const deltaY = e.clientY - startPanY;
+
+        // Direct scrolling without multiplier for accurate control
+        this.scrollLeft = scrollLeft - deltaX;
+        this.scrollTop = scrollTop - deltaY;
+    });
+
+    viewer.on('mouseup.pan mouseleave.pan', function() {
+        if (isPanning) {
+            isPanning = false;
+            if (isPanMode) {
+                $(this).css('cursor', 'grab');
+            }
+        }
+    });
 }
 
 function disablePanning() {
-    const viewer = $('#flipbook-viewer')[0];
-
-    viewer.removeEventListener('mousedown', startPan);
-    viewer.removeEventListener('mousemove', pan);
-    viewer.removeEventListener('mouseup', endPan);
-    viewer.removeEventListener('mouseleave', endPan);
-}
-
-function startPan(e) {
-    // Only allow panning if pan mode is active AND zoomed in
-    if (!isPanMode || !zoomActive) return;
-
-    isPanning = true;
-    startPanX = e.pageX - this.offsetLeft;
-    startPanY = e.pageY - this.offsetTop;
-    scrollLeft = this.scrollLeft;
-    scrollTop = this.scrollTop;
-    e.preventDefault();
-}
-
-function pan(e) {
-    if (!isPanning || !isPanMode) return;
-    e.preventDefault();
-    const x = e.pageX - this.offsetLeft;
-    const y = e.pageY - this.offsetTop;
-    const walkX = (x - startPanX) * 1.5;
-    const walkY = (y - startPanY) * 1.5;
-    this.scrollLeft = scrollLeft - walkX;
-    this.scrollTop = scrollTop - walkY;
-}
-
-function endPan() {
+    const viewer = $('#flipbook-viewer');
+    viewer.off('.pan'); // Remove all pan-related events
     isPanning = false;
 }
 
