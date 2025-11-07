@@ -366,14 +366,17 @@ body {
     overflow: auto; /* Allow scrolling when zoomed */
     background: #e8e8e8;
     padding: 20px;
-    cursor: grab;
 }
 
-#flipbook-viewer:active {
-    cursor: grabbing;
+#flipbook-viewer.pan-mode {
+    cursor: grab !important;
 }
 
-#flipbook-viewer.zoomed {
+#flipbook-viewer.pan-mode:active {
+    cursor: grabbing !important;
+}
+
+#flipbook-viewer.zoomed.pan-mode {
     cursor: move;
 }
 
@@ -381,7 +384,7 @@ body {
     width: 80%;
     height: 85vh;
     margin: 0 auto;
-    user-select: none;
+    position: relative;
 }
 
 #flipbook .page {
@@ -389,12 +392,16 @@ body {
     height: 100%;
     background-color: white;
     background-size: 100% 100%;
+    pointer-events: auto;
+    user-select: none;
 }
 
 #flipbook .page img {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    pointer-events: none;
+    user-select: none;
 }
 
 /* Turn.js shadows */
@@ -1002,8 +1009,8 @@ $(document).ready(function() {
         corners: 'tl,tr,bl,br', // Enable all corners for dragging
         when: {
             turning: function(e, page, view) {
-                // Disable turning if pan mode is active or if panning
-                if (isPanMode || isPanning) {
+                // Only block turning if actively panning
+                if (isPanning) {
                     e.preventDefault();
                     return false;
                 }
@@ -1019,8 +1026,8 @@ $(document).ready(function() {
                 }
             },
             start: function(e, pageObject, corner) {
-                // Prevent drag-to-flip only when pan mode is active
-                if (isPanMode) {
+                // Only prevent drag-to-flip when actively panning
+                if (isPanning) {
                     e.preventDefault();
                     return false;
                 }
@@ -1093,11 +1100,11 @@ $(document).ready(function() {
 
         const viewer = $('#flipbook-viewer');
         if (isPanMode) {
-            viewer.css('cursor', 'grab');
+            viewer.addClass('pan-mode');
             // Always enable panning when pan tool is active
             enablePanning();
         } else {
-            viewer.css('cursor', 'default');
+            viewer.removeClass('pan-mode');
             disablePanning();
         }
     });
@@ -1162,7 +1169,7 @@ function applyZoom(scale) {
         if (isPanMode) {
             isPanMode = false;
             panToolBtn.removeClass('active');
-            viewer.css('cursor', 'default');
+            viewer.removeClass('pan-mode');
         }
     }
 
@@ -1198,16 +1205,22 @@ function disablePanning() {
 }
 
 function startPan(e) {
-    if (!zoomActive) return;
+    // Only allow panning if pan mode is active AND zoomed in
+    if (!isPanMode || !zoomActive) return;
+
+    // Don't pan if clicking on the flipbook itself (let turn.js handle it)
+    if ($(e.target).closest('#flipbook').length > 0) return;
+
     isPanning = true;
     startPanX = e.pageX - this.offsetLeft;
     startPanY = e.pageY - this.offsetTop;
     scrollLeft = this.scrollLeft;
     scrollTop = this.scrollTop;
+    e.preventDefault();
 }
 
 function pan(e) {
-    if (!isPanning) return;
+    if (!isPanning || !isPanMode) return;
     e.preventDefault();
     const x = e.pageX - this.offsetLeft;
     const y = e.pageY - this.offsetTop;
