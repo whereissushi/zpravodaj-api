@@ -381,10 +381,9 @@ body {
 }
 
 #flipbook {
-    width: 80%;
-    height: 85vh;
     margin: 0 auto;
     position: relative;
+    /* Dynamic sizing handled by JavaScript */
 }
 
 #flipbook .page {
@@ -1002,9 +1001,31 @@ if (searchData) {
 
 // Initialize turn.js
 $(document).ready(function() {
+    // Calculate dimensions based on viewport
+    const viewportWidth = $(window).width();
+    const viewportHeight = $(window).height() - 48; // Minus toolbar height
+
+    // Dynamic sizing based on screen resolution
+    let bookWidth, bookHeight;
+    if (isMobile) {
+        bookWidth = Math.min(400, viewportWidth * 0.9);
+        bookHeight = Math.min(600, viewportHeight * 0.8);
+    } else {
+        // Scale based on viewport - better for all screen sizes
+        if (viewportWidth <= 1920) {
+            // Smaller screens (1920x1080 and below)
+            bookWidth = Math.min(1200, viewportWidth * 0.75);
+            bookHeight = Math.min(800, viewportHeight * 0.85);
+        } else {
+            // Larger screens (1440p and above)
+            bookWidth = Math.min(1400, viewportWidth * 0.7);
+            bookHeight = Math.min(990, viewportHeight * 0.85);
+        }
+    }
+
     flipbook.turn({
-        width: isMobile ? 400 : 1400,
-        height: isMobile ? 600 : 990,
+        width: bookWidth,
+        height: bookHeight,
         elevation: 50,
         gradients: true,
         autoCenter: true,
@@ -1015,8 +1036,8 @@ $(document).ready(function() {
         corners: 'all', // Enable all corners for dragging (larger area)
         when: {
             turning: function(e, page, view) {
-                // Only block turning if actively panning
-                if (isPanning) {
+                // Block turning if pan mode is active OR actively panning
+                if (isPanMode || isPanning) {
                     e.preventDefault();
                     return false;
                 }
@@ -1032,8 +1053,8 @@ $(document).ready(function() {
                 }
             },
             start: function(e, pageObject, corner) {
-                // Only prevent drag-to-flip when actively panning
-                if (isPanning) {
+                // Prevent drag-to-flip when pan mode is active OR actively panning
+                if (isPanMode || isPanning) {
                     e.preventDefault();
                     return false;
                 }
@@ -1045,6 +1066,29 @@ $(document).ready(function() {
     currentPageSpan.text(1);
     updateThumbnails(1);
 
+    // Handle window resize for responsive behavior
+    $(window).on('resize', function() {
+        const newViewportWidth = $(window).width();
+        const newViewportHeight = $(window).height() - 48;
+
+        let newBookWidth, newBookHeight;
+        if (isMobile) {
+            newBookWidth = Math.min(400, newViewportWidth * 0.9);
+            newBookHeight = Math.min(600, newViewportHeight * 0.8);
+        } else {
+            if (newViewportWidth <= 1920) {
+                newBookWidth = Math.min(1200, newViewportWidth * 0.75);
+                newBookHeight = Math.min(800, newViewportHeight * 0.85);
+            } else {
+                newBookWidth = Math.min(1400, newViewportWidth * 0.7);
+                newBookHeight = Math.min(990, newViewportHeight * 0.85);
+            }
+        }
+
+        // Update turn.js dimensions
+        flipbook.turn('size', newBookWidth, newBookHeight);
+    });
+
     // Enhanced drag-to-flip functionality for entire page area
     let isDragging = false;
     let dragStartX = 0;
@@ -1053,13 +1097,11 @@ $(document).ready(function() {
 
     // Desktop drag-to-flip
     flipbook.on('mousedown', function(e) {
-        // Skip if pan mode is active
-        if (isPanMode || isPanning) return;
+        // ALWAYS skip if pan mode is active - no drag-to-flip when pan tool is on
+        if (isPanMode) return;
 
-        // Skip if zoomed (unless we want to flip while zoomed)
-        if (zoomActive && !isPanMode) {
-            // Allow flipping even when zoomed if pan mode is off
-        }
+        // Also skip if actively panning
+        if (isPanning) return;
 
         isDragging = true;
         dragStartX = e.pageX;
