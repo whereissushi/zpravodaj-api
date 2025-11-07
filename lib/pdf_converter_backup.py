@@ -160,8 +160,11 @@ class PDFToFlipbook:
             <button id="menu-btn" class="toolbar-btn" title="Obsah">
                 <i class="fas fa-list"></i>
             </button>
-            <button id="zoom-toggle-btn" class="toolbar-btn" title="Přiblížení">
-                <i class="fas fa-search-plus"></i>
+            <button id="zoom-in-btn" class="toolbar-btn" title="Přiblížit">
+                <i class="fas fa-magnifying-glass-plus"></i>
+            </button>
+            <button id="zoom-out-btn" class="toolbar-btn" title="Oddálit">
+                <i class="fas fa-magnifying-glass-minus"></i>
             </button>
             <button id="prev-page-btn" class="toolbar-btn" title="Předchozí">
                 <i class="fas fa-chevron-left"></i>
@@ -188,6 +191,9 @@ class PDFToFlipbook:
             </button>
             <button id="download-pdf-btn" class="toolbar-btn" title="Stáhnout PDF">
                 <i class="fas fa-file-pdf"></i>
+            </button>
+            <button id="ai-summary-btn" class="toolbar-btn" title="AI Shrnutí">
+                <i class="fas fa-robot"></i>
             </button>
         </div>
 
@@ -218,7 +224,7 @@ class PDFToFlipbook:
     <!-- AI Summary overlay -->
     <div id="ai-summary-overlay" style="display: none;">
         <div class="search-modal">
-            <h2>AI Shrnutí Zpravodaje</h2>
+            <h2>🤖 AI Shrnutí Zpravodaje</h2>
             <div id="ai-summary-content">
                 <p style="text-align: center; color: #666;">
                     <i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i><br>
@@ -232,7 +238,7 @@ class PDFToFlipbook:
     <!-- Menu overlay -->
     <div id="menu-overlay" style="display: none;">
         <div class="search-modal">
-            <h2>Obsah</h2>
+            <h2>📑 Obsah</h2>
             <div id="menu-content"></div>
             <button id="menu-close-btn">Zavřít</button>
         </div>
@@ -261,24 +267,35 @@ class PDFToFlipbook:
         </div>
     </div>
 
-    <!-- Simple zoom panel like Munipolis -->
-    <div id="zoom-panel" style="display: none;">
-        <button id="zoom-out" class="zoom-btn" title="Oddálit">
-            <i class="fas fa-minus"></i>
-        </button>
-        <span id="zoom-value">100%</span>
-        <button id="zoom-in" class="zoom-btn" title="Přiblížit">
-            <i class="fas fa-plus"></i>
-        </button>
-        <button id="zoom-fit" class="zoom-btn" title="Přizpůsobit šířce">
-            <i class="fas fa-expand-arrows-alt"></i>
-        </button>
-        <button id="zoom-reset" class="zoom-btn" title="Původní velikost">
-            <i class="fas fa-compress-arrows-alt"></i>
-        </button>
-        <button id="pan-tool" class="zoom-btn" title="Posun obrazu">
-            <i class="fas fa-hand"></i>
-        </button>
+    <!-- Zoom menu overlay -->
+    <div id="zoom-menu-overlay" style="display: none;">
+        <div class="search-modal zoom-menu-modal">
+            <h2>🔍 Přiblížení</h2>
+            <div id="zoom-menu-content">
+                <p style="text-align: center; margin-bottom: 20px; color: #666;">
+                    Aktuální: <strong id="current-zoom-display">100%</strong>
+                </p>
+                <div class="zoom-options">
+                    <button class="zoom-option-btn" data-zoom="0.5">50%</button>
+                    <button class="zoom-option-btn" data-zoom="0.75">75%</button>
+                    <button class="zoom-option-btn active" data-zoom="1">100%</button>
+                    <button class="zoom-option-btn" data-zoom="1.25">125%</button>
+                    <button class="zoom-option-btn" data-zoom="1.5">150%</button>
+                    <button class="zoom-option-btn" data-zoom="2">200%</button>
+                    <button class="zoom-option-btn" data-zoom="2.5">250%</button>
+                    <button class="zoom-option-btn" data-zoom="3">300%</button>
+                </div>
+                <div style="margin-top: 20px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 500; color: #333;">Vlastní:</label>
+                    <input type="range" id="zoom-slider" min="50" max="300" value="100" step="25" style="width: 100%;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 5px;">
+                        <span>50%</span>
+                        <span>300%</span>
+                    </div>
+                </div>
+            </div>
+            <button id="zoom-menu-close-btn">Zavřít</button>
+        </div>
     </div>
 
     <script>
@@ -781,60 +798,7 @@ body {
     background: #1e4f8a;
 }
 
-/* New zoom panel styling - Munipolis style */
-#zoom-panel {
-    position: fixed;
-    top: 60px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 8px;
-    z-index: 1000;
-    height: 36px;
-}
-
-#zoom-panel .zoom-btn {
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: #555;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 3px;
-    transition: background 0.2s;
-}
-
-#zoom-panel .zoom-btn:hover {
-    background: #f0f0f0;
-}
-
-#zoom-panel .zoom-btn.active {
-    background: #e0e0e0;
-    color: #2563a6;
-}
-
-#zoom-panel #zoom-value {
-    min-width: 50px;
-    text-align: center;
-    font-size: 13px;
-    color: #333;
-    font-weight: 500;
-    padding: 0 4px;
-    border-left: 1px solid #ddd;
-    border-right: 1px solid #ddd;
-}
-
-/* Keep old zoom styling for backward compatibility */
+/* Zoom menu styling */
 .zoom-options {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -931,7 +895,8 @@ const thumbnailItems = $('.thumbnail-item');
 // Toolbar buttons
 const searchBtn = $('#search-btn');
 const menuBtn = $('#menu-btn');
-const zoomToggleBtn = $('#zoom-toggle-btn');
+const zoomInBtn = $('#zoom-in-btn');
+const zoomOutBtn = $('#zoom-out-btn');
 const prevPageBtn = $('#prev-page-btn');
 const nextPageBtn = $('#next-page-btn');
 const firstPageBtn = $('#first-page-btn');
@@ -939,6 +904,7 @@ const lastPageBtn = $('#last-page-btn');
 const shareBtn = $('#share-btn');
 const fullscreenBtn = $('#fullscreen-btn');
 const downloadPdfBtn = $('#download-pdf-btn');
+const aiSummaryBtn = $('#ai-summary-btn');
 
 // Overlays
 const aiSummaryOverlay = $('#ai-summary-overlay');
@@ -951,16 +917,11 @@ const shareOverlay = $('#share-overlay');
 const shareUrlInput = $('#share-url-input');
 const copyUrlBtn = $('#copy-url-btn');
 const shareCloseBtn = $('#share-close-btn');
-
-// New zoom panel elements
-const zoomPanel = $('#zoom-panel');
-const zoomOutBtn = $('#zoom-out');
-const zoomInBtn = $('#zoom-in');
-const zoomValue = $('#zoom-value');
-const zoomFitBtn = $('#zoom-fit');
-const zoomResetBtn = $('#zoom-reset');
-const panToolBtn = $('#pan-tool');
-let isPanMode = false;
+const zoomMenuOverlay = $('#zoom-menu-overlay');
+const zoomMenuCloseBtn = $('#zoom-menu-close-btn');
+const zoomSlider = $('#zoom-slider');
+const currentZoomDisplay = $('#current-zoom-display');
+const zoomOptionBtns = $('.zoom-option-btn');
 
 // Search elements
 const searchOverlay = $('#search-overlay');
@@ -999,11 +960,11 @@ $(document).ready(function() {
         acceleration: true,
         display: isMobile ? 'single' : 'double',
         page: 1,
-        corners: 'tl,tr,bl,br', // Enable all corners for dragging
+        // Enable interactive page flipping
         when: {
             turning: function(e, page, view) {
-                // Disable turning if pan mode is active or if panning
-                if (isPanMode || isPanning) {
+                // Disable turning if zoomed in or panning
+                if (zoomActive || isPanning) {
                     e.preventDefault();
                     return false;
                 }
@@ -1019,8 +980,8 @@ $(document).ready(function() {
                 }
             },
             start: function(e, pageObject, corner) {
-                // Prevent drag-to-flip only when pan mode is active
-                if (isPanMode) {
+                // Prevent drag if zoomed
+                if (zoomActive) {
                     e.preventDefault();
                     return false;
                 }
@@ -1058,65 +1019,70 @@ $(document).ready(function() {
         });
     }
 
-    // New zoom panel handlers
-    zoomToggleBtn.click(function() {
-        zoomPanel.toggle();
-    });
+    // Zoom menu handlers (must be inside ready to ensure elements exist)
+    const zoomOptionBtnsReady = $('.zoom-option-btn');
 
     zoomInBtn.click(function() {
-        applyZoom(Math.min(3, zoomLevel + 0.25));
-        updateZoomDisplay();
+        // Update current zoom display
+        currentZoomDisplay.text(Math.round(zoomLevel * 100) + '%');
+
+        // Update slider position
+        zoomSlider.val(Math.round(zoomLevel * 100));
+
+        // Update active button
+        updateZoomActiveButton(zoomLevel);
+
+        // Show zoom menu
+        zoomMenuOverlay.show();
     });
 
     zoomOutBtn.click(function() {
-        applyZoom(Math.max(0.5, zoomLevel - 0.25));
+        applyZoom(zoomLevel - 0.25);
         updateZoomDisplay();
     });
 
-    zoomFitBtn.click(function() {
-        // Calculate zoom to fit width
-        const viewerWidth = $('#flipbook-viewer').width();
-        const bookWidth = flipbook.width();
-        const fitZoom = viewerWidth / bookWidth;
-        applyZoom(fitZoom);
-        updateZoomDisplay();
+    zoomMenuCloseBtn.click(function() {
+        zoomMenuOverlay.hide();
     });
 
-    zoomResetBtn.click(function() {
-        applyZoom(1);
-        updateZoomDisplay();
-    });
-
-    panToolBtn.click(function() {
-        isPanMode = !isPanMode;
-        $(this).toggleClass('active');
-
-        const viewer = $('#flipbook-viewer');
-        if (isPanMode) {
-            viewer.css('cursor', 'grab');
-            // Always enable panning when pan tool is active
-            enablePanning();
-        } else {
-            viewer.css('cursor', 'default');
-            disablePanning();
+    zoomMenuOverlay.click(function(e) {
+        if (e.target === this) {
+            zoomMenuOverlay.hide();
         }
+    });
+
+    // Preset zoom buttons
+    zoomOptionBtnsReady.click(function() {
+        const zoom = parseFloat($(this).data('zoom'));
+        applyZoom(zoom);
+        updateZoomDisplay();
+
+        // Update active state
+        zoomOptionBtnsReady.removeClass('active');
+        $(this).addClass('active');
+    });
+
+    // Zoom slider
+    zoomSlider.on('input', function() {
+        const zoom = parseInt($(this).val()) / 100;
+        applyZoom(zoom);
+        updateZoomDisplay();
+        updateZoomActiveButton(zoom);
     });
 
     function updateZoomDisplay() {
-        zoomValue.text(Math.round(zoomLevel * 100) + '%');
+        currentZoomDisplay.text(Math.round(zoomLevel * 100) + '%');
+        zoomSlider.val(Math.round(zoomLevel * 100));
+        updateZoomActiveButton(zoomLevel);
+    }
 
-        // Update button states
-        if (zoomLevel <= 0.5) {
-            zoomOutBtn.prop('disabled', true);
-        } else {
-            zoomOutBtn.prop('disabled', false);
-        }
-
-        if (zoomLevel >= 3) {
-            zoomInBtn.prop('disabled', true);
-        } else {
-            zoomInBtn.prop('disabled', false);
-        }
+    function updateZoomActiveButton(zoom) {
+        zoomOptionBtnsReady.removeClass('active');
+        zoomOptionBtnsReady.each(function() {
+            if (Math.abs(parseFloat($(this).data('zoom')) - zoom) < 0.01) {
+                $(this).addClass('active');
+            }
+        });
     }
 });
 
@@ -1146,29 +1112,10 @@ function applyZoom(scale) {
     const viewer = $('#flipbook-viewer');
     if (zoomActive) {
         viewer.addClass('zoomed');
-        // Auto-enable scrolling when zoomed (viewer has overflow: auto)
-        viewer.css('overflow', 'auto');
-
-        // Enable panning if pan tool is active
-        if (isPanMode) {
-            enablePanning();
-        }
+        enablePanning();
     } else {
         viewer.removeClass('zoomed');
-        viewer.css('overflow', 'hidden');
         disablePanning();
-
-        // If zoom is reset to 1x, also deactivate pan mode
-        if (isPanMode) {
-            isPanMode = false;
-            panToolBtn.removeClass('active');
-            viewer.css('cursor', 'default');
-        }
-    }
-
-    // Update display immediately
-    if (typeof updateZoomDisplay === 'function') {
-        updateZoomDisplay();
     }
 }
 
@@ -1314,29 +1261,54 @@ function goToPage(page) {
     searchResults.html('');
 }
 
-// Click on page edges to turn pages (like Munipolis)
-flipbook.on('click', '.page', function(e) {
-    // Don't turn pages if pan mode is active
-    if (isPanMode) return;
+// Click-to-zoom on pages (only if not dragging)
+let clickStartTime = 0;
+let clickStartPos = { x: 0, y: 0 };
 
-    const page = $(this);
-    const offset = page.offset();
-    const width = page.width();
-    const x = e.pageX - offset.left;
+flipbook.on('mousedown', '.page img', function(e) {
+    clickStartTime = Date.now();
+    clickStartPos = { x: e.pageX, y: e.pageY };
+});
 
-    // Define click zones (20% on each edge)
-    const leftZone = width * 0.2;
-    const rightZone = width * 0.8;
+flipbook.on('click', '.page img', function(e) {
+    const timeDiff = Date.now() - clickStartTime;
+    const distanceMoved = Math.sqrt(
+        Math.pow(e.pageX - clickStartPos.x, 2) +
+        Math.pow(e.pageY - clickStartPos.y, 2)
+    );
 
-    // Click on left edge - go to previous page
-    if (x < leftZone) {
-        flipbook.turn('previous');
+    // Only zoom if it's a real click (not a drag)
+    // Quick click with minimal movement
+    if (timeDiff < 300 && distanceMoved < 10) {
+        if (!zoomActive) {
+            // Get click position relative to the image
+            const offset = $(this).offset();
+            const x = e.pageX - offset.left;
+            const y = e.pageY - offset.top;
+            const width = $(this).width();
+            const height = $(this).height();
+
+            // Calculate transform origin as percentage
+            const originX = (x / width) * 100;
+            const originY = (y / height) * 100;
+
+            // Zoom to 2x at click point
+            zoomLevel = 2;
+            flipbook.turn('stop').css({
+                transform: `scale(2)`,
+                transformOrigin: `${originX}% ${originY}%`
+            });
+            zoomActive = true;
+        } else {
+            // Reset zoom
+            zoomLevel = 1;
+            flipbook.turn('stop').css({
+                transform: `scale(1)`,
+                transformOrigin: 'center center'
+            });
+            zoomActive = false;
+        }
     }
-    // Click on right edge - go to next page
-    else if (x > rightZone) {
-        flipbook.turn('next');
-    }
-    // Click in middle - optional: could add zoom here if needed
 });
 
 prevPageBtn.click(function() {
@@ -1448,13 +1420,11 @@ downloadPdfBtn.click(function() {
     document.body.removeChild(link);
 });
 
-// AI Summary handlers - if button exists
-if ($('#ai-summary-btn').length > 0) {
-    $('#ai-summary-btn').click(function() {
-        aiSummaryOverlay.show();
-        generateAISummary();
-    });
-}
+// AI Summary button
+aiSummaryBtn.click(function() {
+    aiSummaryOverlay.show();
+    generateAISummary();
+});
 
 aiSummaryCloseBtn.click(function() {
     aiSummaryOverlay.hide();
