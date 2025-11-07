@@ -1002,8 +1002,8 @@ $(document).ready(function() {
         // Enable interactive page flipping
         when: {
             turning: function(e, page, view) {
-                // Disable turning if zoomed in or panning
-                if (zoomActive || isPanning) {
+                // Disable turning if pan mode is active or if panning
+                if (isPanMode || isPanning) {
                     e.preventDefault();
                     return false;
                 }
@@ -1019,8 +1019,8 @@ $(document).ready(function() {
                 }
             },
             start: function(e, pageObject, corner) {
-                // Prevent drag if zoomed
-                if (zoomActive) {
+                // Prevent drag if pan mode is active
+                if (isPanMode) {
                     e.preventDefault();
                     return false;
                 }
@@ -1092,9 +1092,13 @@ $(document).ready(function() {
         $(this).toggleClass('active');
 
         if (isPanMode) {
+            // Disable turn.js drag completely
+            flipbook.turn('disable', true);
             $('#flipbook-viewer').css('cursor', 'grab');
             enablePanning();
         } else {
+            // Re-enable turn.js
+            flipbook.turn('disable', false);
             $('#flipbook-viewer').css('cursor', 'default');
             disablePanning();
         }
@@ -1151,6 +1155,14 @@ function applyZoom(scale) {
     } else {
         viewer.removeClass('zoomed');
         disablePanning();
+
+        // If zoom is reset to 1x, also deactivate pan mode
+        if (isPanMode) {
+            isPanMode = false;
+            panToolBtn.removeClass('active');
+            flipbook.turn('disable', false);
+            viewer.css('cursor', 'default');
+        }
     }
 
     // Update display immediately
@@ -1301,54 +1313,29 @@ function goToPage(page) {
     searchResults.html('');
 }
 
-// Click-to-zoom on pages (only if not dragging)
-let clickStartTime = 0;
-let clickStartPos = { x: 0, y: 0 };
+// Click on page edges to turn pages (like Munipolis)
+flipbook.on('click', '.page', function(e) {
+    // Don't turn pages if pan mode is active
+    if (isPanMode) return;
 
-flipbook.on('mousedown', '.page img', function(e) {
-    clickStartTime = Date.now();
-    clickStartPos = { x: e.pageX, y: e.pageY };
-});
+    const page = $(this);
+    const offset = page.offset();
+    const width = page.width();
+    const x = e.pageX - offset.left;
 
-flipbook.on('click', '.page img', function(e) {
-    const timeDiff = Date.now() - clickStartTime;
-    const distanceMoved = Math.sqrt(
-        Math.pow(e.pageX - clickStartPos.x, 2) +
-        Math.pow(e.pageY - clickStartPos.y, 2)
-    );
+    // Define click zones (20% on each edge)
+    const leftZone = width * 0.2;
+    const rightZone = width * 0.8;
 
-    // Only zoom if it's a real click (not a drag)
-    // Quick click with minimal movement
-    if (timeDiff < 300 && distanceMoved < 10) {
-        if (!zoomActive) {
-            // Get click position relative to the image
-            const offset = $(this).offset();
-            const x = e.pageX - offset.left;
-            const y = e.pageY - offset.top;
-            const width = $(this).width();
-            const height = $(this).height();
-
-            // Calculate transform origin as percentage
-            const originX = (x / width) * 100;
-            const originY = (y / height) * 100;
-
-            // Zoom to 2x at click point
-            zoomLevel = 2;
-            flipbook.turn('stop').css({
-                transform: `scale(2)`,
-                transformOrigin: `${originX}% ${originY}%`
-            });
-            zoomActive = true;
-        } else {
-            // Reset zoom
-            zoomLevel = 1;
-            flipbook.turn('stop').css({
-                transform: `scale(1)`,
-                transformOrigin: 'center center'
-            });
-            zoomActive = false;
-        }
+    // Click on left edge - go to previous page
+    if (x < leftZone) {
+        flipbook.turn('previous');
     }
+    // Click on right edge - go to next page
+    else if (x > rightZone) {
+        flipbook.turn('next');
+    }
+    // Click in middle - optional: could add zoom here if needed
 });
 
 prevPageBtn.click(function() {
