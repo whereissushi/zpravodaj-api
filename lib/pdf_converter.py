@@ -359,13 +359,12 @@ body {
 
 #flipbook-viewer {
     flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     position: relative;
     overflow: hidden; /* Default hidden, auto when zoomed via JS */
     background: #e8e8e8;
-    padding: 40px; /* More padding for scroll area */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #flipbook-viewer.pan-mode {
@@ -378,6 +377,14 @@ body {
 
 #flipbook-viewer.zoomed.pan-mode {
     cursor: move;
+}
+
+#flipbook-scroll-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100%;
+    min-height: 100%;
 }
 
 #flipbook {
@@ -1264,21 +1271,36 @@ function applyZoom(scale) {
     // Toggle zoomed class and overflow settings
     if (zoomActive) {
         viewer.addClass('zoomed');
-        // Important: Set overflow to auto for scrolling
+
+        // Calculate the actual scaled dimensions
+        const baseWidth = flipbookElement.width();
+        const baseHeight = flipbookElement.height();
+        const scaledWidth = baseWidth * zoomLevel;
+        const scaledHeight = baseHeight * zoomLevel;
+
+        // Create a wrapper div if it doesn't exist
+        if (!$('#flipbook-scroll-wrapper').length) {
+            flipbookElement.wrap('<div id="flipbook-scroll-wrapper"></div>');
+        }
+
+        const wrapper = $('#flipbook-scroll-wrapper');
+
+        // Set the wrapper size to create scrollable area
+        // Add extra padding for scrolling beyond the edges
+        wrapper.css({
+            'width': (scaledWidth + 400) + 'px',
+            'height': (scaledHeight + 400) + 'px',
+            'position': 'relative',
+            'display': 'flex',
+            'align-items': 'center',
+            'justify-content': 'center'
+        });
+
+        // Enable scrolling on viewer
         viewer.css({
             'overflow': 'auto',
             'overflow-x': 'auto',
             'overflow-y': 'auto'
-        });
-
-        // Make sure the viewer can actually scroll
-        // Add some padding to ensure scrollable area
-        const scaledHeight = flipbookElement.height() * zoomLevel;
-        const scaledWidth = flipbookElement.width() * zoomLevel;
-
-        viewer.css({
-            'min-height': Math.max(viewer.height(), scaledHeight + 100) + 'px',
-            'min-width': Math.max(viewer.width(), scaledWidth + 100) + 'px'
         });
 
         // Enable panning if pan tool is active
@@ -1288,10 +1310,18 @@ function applyZoom(scale) {
     } else {
         viewer.removeClass('zoomed');
         viewer.css({
-            'overflow': 'hidden',
-            'min-height': '',
-            'min-width': ''
+            'overflow': 'hidden'
         });
+
+        // Reset wrapper if exists
+        const wrapper = $('#flipbook-scroll-wrapper');
+        if (wrapper.length) {
+            wrapper.css({
+                'width': '',
+                'height': ''
+            });
+        }
+
         disablePanning();
 
         // If zoom is reset to 1x, also deactivate pan mode
