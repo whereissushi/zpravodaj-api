@@ -1394,12 +1394,18 @@ function applyZoom(scale, clickX, clickY) {
 
                 console.log('Container point:', containerPointX, containerPointY);
 
-                // Scroll so this point appears at the click position
-                const targetScrollX = containerPointX - clickX;
-                const targetScrollY = containerPointY - clickY;
+                // Where should this point appear in viewport?
+                // Use the SAME relative position as the original click
+                // If clicked at center of flipbook, should appear at center of viewport
+                const targetViewportX = clickX !== undefined ? clickX : viewerWidth / 2;
+                const targetViewportY = clickY !== undefined ? clickY : viewerHeight / 2;
 
+                // Calculate scroll to make container point appear at target viewport position
+                const targetScrollX = containerPointX - targetViewportX;
+                const targetScrollY = containerPointY - targetViewportY;
+
+                console.log('Target viewport position:', targetViewportX, targetViewportY);
                 console.log('Target scroll:', targetScrollX, targetScrollY);
-                console.log('Click position:', clickX, clickY);
 
                 viewer[0].scrollLeft = targetScrollX;
                 viewer[0].scrollTop = targetScrollY;
