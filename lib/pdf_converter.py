@@ -382,6 +382,14 @@ body {
     cursor: move;
 }
 
+#flipbook-viewer.zoom-cursor-mode {
+    cursor: zoom-in !important;
+}
+
+#flipbook-viewer.zoom-cursor-mode.zoomed {
+    cursor: zoom-in !important;
+}
+
 #zoom-container {
     position: relative;
     display: flex;
@@ -402,12 +410,14 @@ body {
     background-position: center;
     pointer-events: auto;
     user-select: none;
+    overflow: hidden;
 }
 
 #flipbook .page img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover; /* Changed from contain to cover to fill entire page */
+    object-position: center;
     pointer-events: none;
     user-select: none;
 }
@@ -982,6 +992,7 @@ const zoomFitBtn = $('#zoom-fit');
 const zoomResetBtn = $('#zoom-reset');
 const panToolBtn = $('#pan-tool');
 let isPanMode = false;
+let isZoomCursorMode = false; // New: track if zoom cursor is active
 
 // Search elements
 const searchOverlay = $('#search-overlay');
@@ -1181,9 +1192,25 @@ $(document).ready(function() {
         });
     }
 
-    // New zoom panel handlers
+    // Zoom toggle button - activates zoom cursor mode
     zoomToggleBtn.click(function() {
-        zoomPanel.toggle();
+        isZoomCursorMode = !isZoomCursorMode;
+        const viewer = $('#flipbook-viewer');
+
+        if (isZoomCursorMode) {
+            $(this).addClass('active');
+            viewer.addClass('zoom-cursor-mode');
+            // Disable pan mode if active
+            if (isPanMode) {
+                isPanMode = false;
+                panToolBtn.removeClass('active');
+                viewer.removeClass('pan-mode');
+                disablePanning();
+            }
+        } else {
+            $(this).removeClass('active');
+            viewer.removeClass('zoom-cursor-mode');
+        }
     });
 
     zoomInBtn.click(function() {
@@ -1255,7 +1282,7 @@ function updateThumbnails(page) {
     }
 }
 
-function applyZoom(scale) {
+function applyZoom(scale, clickX, clickY) {
     const previousZoom = zoomLevel;
     zoomLevel = Math.max(0.5, Math.min(3, scale));
 
@@ -1266,7 +1293,14 @@ function applyZoom(scale) {
     let currentScrollRatioX = 0;
     let currentScrollRatioY = 0;
 
-    if (previousZoom > 1 && viewer[0].scrollWidth > 0) {
+    // If click position provided (zoom-to-click), use it
+    if (clickX !== undefined && clickY !== undefined) {
+        // Calculate ratio based on click position
+        const viewerWidth = viewer.width();
+        const viewerHeight = viewer.height();
+        currentScrollRatioX = clickX / viewerWidth;
+        currentScrollRatioY = clickY / viewerHeight;
+    } else if (previousZoom > 1 && viewer[0].scrollWidth > 0) {
         // Calculate current position as ratio of scroll
         currentScrollRatioX = (viewer[0].scrollLeft + viewer.width() / 2) / viewer[0].scrollWidth;
         currentScrollRatioY = (viewer[0].scrollTop + viewer.height() / 2) / viewer[0].scrollHeight;
@@ -1296,11 +1330,10 @@ function applyZoom(scale) {
         const scaledWidth = baseWidth * zoomLevel;
         const scaledHeight = baseHeight * zoomLevel;
 
-        // Use smaller padding to prevent too much empty space
-        // But ensure minimum padding for panning
-        const minPadding = 100; // Minimum 100px padding on each side
-        const paddingX = Math.max(minPadding, viewerWidth * 0.2);
-        const paddingY = Math.max(minPadding, viewerHeight * 0.2);
+        // Generous padding for unlimited panning in all directions
+        // Use 100% of scaled dimensions for maximum freedom
+        const paddingX = Math.max(scaledWidth, viewerWidth * 1.5);
+        const paddingY = Math.max(scaledHeight, viewerHeight * 1.5);
 
         // Set container size - just enough for the scaled content plus minimal padding
         const containerWidth = scaledWidth + paddingX * 2;
@@ -1334,9 +1367,15 @@ function applyZoom(scale) {
             'overflow-y': 'auto'
         });
 
-        // Maintain scroll position or center if first zoom
+        // Maintain scroll position or center based on click/current position
         setTimeout(() => {
-            if (previousZoom > 1 && currentScrollRatioX > 0) {
+            if (clickX !== undefined && clickY !== undefined) {
+                // Zoom to click position - center the clicked point
+                const newScrollLeft = currentScrollRatioX * viewer[0].scrollWidth - clickX;
+                const newScrollTop = currentScrollRatioY * viewer[0].scrollHeight - clickY;
+                viewer[0].scrollLeft = Math.max(0, Math.min(newScrollLeft, viewer[0].scrollWidth - viewer.width()));
+                viewer[0].scrollTop = Math.max(0, Math.min(newScrollTop, viewer[0].scrollHeight - viewer.height()));
+            } else if (previousZoom > 1 && currentScrollRatioX > 0) {
                 // Maintain relative position when changing zoom levels
                 const newScrollLeft = currentScrollRatioX * viewer[0].scrollWidth - viewer.width() / 2;
                 const newScrollTop = currentScrollRatioY * viewer[0].scrollHeight - viewer.height() / 2;
@@ -1582,8 +1621,35 @@ function goToPage(page) {
     searchResults.html('');
 }
 
-// Click on page edges to turn pages (like Munipolis)
+// Click on page to zoom or turn pages
 flipbook.on('click', '.page', function(e) {
+    // Zoom cursor mode - zoom to click position
+    if (isZoomCursorMode) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const viewer = $('#flipbook-viewer');
+        const flipbookElement = $('#flipbook');
+
+        // Get click position relative to viewer
+        const viewerOffset = viewer.offset();
+        const clickX = e.pageX - viewerOffset.left;
+        const clickY = e.pageY - viewerOffset.top;
+
+        // Calculate target zoom level
+        const targetZoom = zoomActive ? Math.min(3, zoomLevel + 0.5) : 1.5;
+
+        // Store click position for centering
+        zoomClickX = clickX;
+        zoomClickY = clickY;
+
+        // Apply zoom
+        applyZoom(targetZoom, clickX, clickY);
+        updateZoomDisplay();
+
+        return;
+    }
+
     // Don't turn pages if pan mode is active
     if (isPanMode) return;
 
@@ -1604,7 +1670,6 @@ flipbook.on('click', '.page', function(e) {
     else if (x > rightZone) {
         flipbook.turn('next');
     }
-    // Click in middle - optional: could add zoom here if needed
 });
 
 prevPageBtn.click(function() {
