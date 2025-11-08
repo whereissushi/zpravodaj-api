@@ -1291,21 +1291,23 @@ function applyZoom(scale, clickX, clickY) {
     const viewer = $('#flipbook-viewer');
     const flipbookElement = $('#flipbook');
 
-    // Store current scroll position before zoom change (if already zoomed)
-    let currentScrollRatioX = 0;
-    let currentScrollRatioY = 0;
+    // Store the point we want to center on after zoom
+    let targetPointX = null;
+    let targetPointY = null;
 
-    // If click position provided (zoom-to-click), use it
+    // If click position provided (zoom-to-click), calculate the actual document position
     if (clickX !== undefined && clickY !== undefined) {
-        // Calculate ratio based on click position
-        const viewerWidth = viewer.width();
-        const viewerHeight = viewer.height();
-        currentScrollRatioX = clickX / viewerWidth;
-        currentScrollRatioY = clickY / viewerHeight;
+        // Get current scroll position
+        const currentScrollX = viewer[0].scrollLeft || 0;
+        const currentScrollY = viewer[0].scrollTop || 0;
+
+        // Calculate the actual position in the document that was clicked
+        targetPointX = currentScrollX + clickX;
+        targetPointY = currentScrollY + clickY;
     } else if (previousZoom > 1 && viewer[0].scrollWidth > 0) {
-        // Calculate current position as ratio of scroll
-        currentScrollRatioX = (viewer[0].scrollLeft + viewer.width() / 2) / viewer[0].scrollWidth;
-        currentScrollRatioY = (viewer[0].scrollTop + viewer.height() / 2) / viewer[0].scrollHeight;
+        // Maintain center of current view
+        targetPointX = viewer[0].scrollLeft + viewer.width() / 2;
+        targetPointY = viewer[0].scrollTop + viewer.height() / 2;
     }
 
     // Update zoom active flag
@@ -1332,10 +1334,10 @@ function applyZoom(scale, clickX, clickY) {
         const scaledWidth = baseWidth * zoomLevel;
         const scaledHeight = baseHeight * zoomLevel;
 
-        // Generous padding for unlimited panning in all directions
-        // Use 100% of scaled dimensions for maximum freedom
-        const paddingX = Math.max(scaledWidth, viewerWidth * 1.5);
-        const paddingY = Math.max(scaledHeight, viewerHeight * 1.5);
+        // Massive padding for truly unlimited panning in all directions
+        // Use 200% of scaled dimensions on each side
+        const paddingX = scaledWidth * 2;
+        const paddingY = scaledHeight * 2;
 
         // Set container size - just enough for the scaled content plus minimal padding
         const containerWidth = scaledWidth + paddingX * 2;
@@ -1369,28 +1371,26 @@ function applyZoom(scale, clickX, clickY) {
             'overflow-y': 'auto'
         });
 
-        // Maintain scroll position or center based on click/current position
+        // Position the viewport to center on target point
         setTimeout(() => {
-            if (clickX !== undefined && clickY !== undefined) {
-                // Zoom to click position - center the clicked point in viewport
-                // The click position ratio should map to the same visual point after zoom
-                const targetScrollX = currentScrollRatioX * containerWidth - clickX;
-                const targetScrollY = currentScrollRatioY * containerHeight - clickY;
+            if (targetPointX !== null && targetPointY !== null) {
+                // Calculate the zoom ratio
+                const zoomRatio = zoomLevel / (previousZoom || 1);
 
-                viewer[0].scrollLeft = Math.max(0, Math.min(targetScrollX, viewer[0].scrollWidth - viewer.width()));
-                viewer[0].scrollTop = Math.max(0, Math.min(targetScrollY, viewer[0].scrollHeight - viewer.height()));
-            } else if (previousZoom > 1 && currentScrollRatioX > 0) {
-                // Maintain relative position when changing zoom levels
-                const newScrollLeft = currentScrollRatioX * viewer[0].scrollWidth - viewer.width() / 2;
-                const newScrollTop = currentScrollRatioY * viewer[0].scrollHeight - viewer.height() / 2;
-                viewer[0].scrollLeft = Math.max(0, Math.min(newScrollLeft, viewer[0].scrollWidth - viewer.width()));
-                viewer[0].scrollTop = Math.max(0, Math.min(newScrollTop, viewer[0].scrollHeight - viewer.height()));
+                // Scale the target point by the zoom ratio
+                const newTargetX = targetPointX * zoomRatio;
+                const newTargetY = targetPointY * zoomRatio;
+
+                // Center the target point in viewport
+                const newScrollX = newTargetX - (clickX !== undefined ? clickX : viewer.width() / 2);
+                const newScrollY = newTargetY - (clickY !== undefined ? clickY : viewer.height() / 2);
+
+                viewer[0].scrollLeft = newScrollX;
+                viewer[0].scrollTop = newScrollY;
             } else {
                 // Center on first zoom
-                const scrollLeft = Math.max(0, (containerWidth - viewerWidth) / 2);
-                const scrollTop = Math.max(0, (containerHeight - viewerHeight) / 2);
-                viewer[0].scrollLeft = scrollLeft;
-                viewer[0].scrollTop = scrollTop;
+                viewer[0].scrollLeft = (containerWidth - viewerWidth) / 2;
+                viewer[0].scrollTop = (containerHeight - viewerHeight) / 2;
             }
         }, 0);
 
@@ -1627,29 +1627,36 @@ function goToPage(page) {
 
 // Click on page to zoom or turn pages
 flipbook.on('click', '.page', function(e) {
-    // Zoom cursor mode - zoom to click position
+    // Zoom cursor mode - zoom to click position (single click only)
     if (isZoomCursorMode) {
         e.preventDefault();
         e.stopPropagation();
 
         const viewer = $('#flipbook-viewer');
-        const flipbookElement = $('#flipbook');
 
         // Get click position relative to viewer
         const viewerOffset = viewer.offset();
         const clickX = e.pageX - viewerOffset.left;
         const clickY = e.pageY - viewerOffset.top;
 
-        // Calculate target zoom level
-        const targetZoom = zoomActive ? Math.min(3, zoomLevel + 0.5) : 1.5;
-
-        // Store click position for centering
-        zoomClickX = clickX;
-        zoomClickY = clickY;
+        // Calculate target zoom level (single zoom to 1.5x)
+        const targetZoom = 1.5;
 
         // Apply zoom
         applyZoom(targetZoom, clickX, clickY);
         updateZoomDisplay();
+
+        // Deactivate zoom cursor mode after first click
+        isZoomCursorMode = false;
+        zoomToggleBtn.removeClass('active');
+        viewer.removeClass('zoom-cursor-mode');
+
+        // Show zoom panel and activate pan mode automatically
+        zoomPanel.show();
+        isPanMode = true;
+        panToolBtn.addClass('active');
+        viewer.addClass('pan-mode');
+        enablePanning();
 
         return;
     }
