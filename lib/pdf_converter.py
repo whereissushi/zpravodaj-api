@@ -1217,12 +1217,10 @@ $(document).ready(function() {
 
     zoomInBtn.click(function() {
         applyZoom(Math.min(3, zoomLevel + 0.25));
-        updateZoomDisplay();
     });
 
     zoomOutBtn.click(function() {
         applyZoom(Math.max(0.5, zoomLevel - 0.25));
-        updateZoomDisplay();
     });
 
     zoomFitBtn.click(function() {
@@ -1231,12 +1229,10 @@ $(document).ready(function() {
         const bookWidth = flipbook.width();
         const fitZoom = viewerWidth / bookWidth;
         applyZoom(fitZoom);
-        updateZoomDisplay();
     });
 
     zoomResetBtn.click(function() {
         applyZoom(1);
-        updateZoomDisplay();
     });
 
     panToolBtn.click(function() {
@@ -1253,23 +1249,6 @@ $(document).ready(function() {
             disablePanning();
         }
     });
-
-    function updateZoomDisplay() {
-        zoomValue.text(Math.round(zoomLevel * 100) + '%');
-
-        // Update button states
-        if (zoomLevel <= 0.5) {
-            zoomOutBtn.prop('disabled', true);
-        } else {
-            zoomOutBtn.prop('disabled', false);
-        }
-
-        if (zoomLevel >= 3) {
-            zoomInBtn.prop('disabled', true);
-        } else {
-            zoomInBtn.prop('disabled', false);
-        }
-    }
 });
 
 // Helper functions
@@ -1314,13 +1293,25 @@ function applyZoom(scale, clickX, clickY) {
             flipbookPointX = posX / previousZoom;
             flipbookPointY = posY / previousZoom;
         } else {
-            // Not zoomed yet - flipbook is centered in viewer
-            const flipbookOffset = flipbookElement.offset();
-            const viewerOffset = viewer.offset();
+            // Not zoomed yet - need to find where in flipbook was clicked
+            // Get flipbook's actual position on screen
+            const flipbookRect = flipbookElement[0].getBoundingClientRect();
+            const viewerRect = viewer[0].getBoundingClientRect();
 
-            // Click position relative to flipbook
-            flipbookPointX = clickX - (flipbookOffset.left - viewerOffset.left);
-            flipbookPointY = clickY - (flipbookOffset.top - viewerOffset.top);
+            // Click position in viewport
+            const viewportClickX = clickX;
+            const viewportClickY = clickY;
+
+            // Position of flipbook top-left corner relative to viewer top-left
+            const flipbookOffsetX = flipbookRect.left - viewerRect.left;
+            const flipbookOffsetY = flipbookRect.top - viewerRect.top;
+
+            // Click position relative to flipbook's top-left corner
+            flipbookPointX = viewportClickX - flipbookOffsetX;
+            flipbookPointY = viewportClickY - flipbookOffsetY;
+
+            console.log('Flipbook offset from viewer:', flipbookOffsetX, flipbookOffsetY);
+            console.log('Viewport click:', viewportClickX, viewportClickY);
         }
 
         console.log('Flipbook point clicked:', flipbookPointX, flipbookPointY);
@@ -1680,7 +1671,6 @@ flipbook.on('click', '.page', function(e) {
 
         // Apply zoom
         applyZoom(targetZoom, clickX, clickY);
-        updateZoomDisplay();
 
         // Deactivate zoom cursor mode after first click
         isZoomCursorMode = false;
