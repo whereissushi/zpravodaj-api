@@ -1369,7 +1369,7 @@ function applyZoom(scale, clickX, clickY) {
         });
 
         // DON'T use transform:scale! It doesn't affect scroll area!
-        // Instead, actually resize the flipbook and its contents
+        // Instead, actually resize the flipbook and its page elements
         flipbookElement.css({
             position: 'relative',
             width: scaledWidth + 'px',
@@ -1377,10 +1377,27 @@ function applyZoom(scale, clickX, clickY) {
             transform: 'none'
         });
 
-        // Scale all page images using CSS
-        flipbookElement.find('.page, .page img').css({
-            transform: `scale(${zoomLevel})`,
-            transformOrigin: 'top left'
+        // Resize page elements to scaled size (no transform!)
+        flipbookElement.find('.page').each(function() {
+            const page = $(this);
+            const originalWidth = page.data('original-width') || page.width() / (page.data('current-zoom') || 1);
+            const originalHeight = page.data('original-height') || page.height() / (page.data('current-zoom') || 1);
+
+            // Store original dimensions if not stored yet
+            if (!page.data('original-width')) {
+                page.data('original-width', originalWidth);
+                page.data('original-height', originalHeight);
+            }
+
+            // Set actual width/height to scaled size
+            page.css({
+                width: (originalWidth * zoomLevel) + 'px',
+                height: (originalHeight * zoomLevel) + 'px',
+                transform: 'none'
+            });
+
+            // Store current zoom for future calculations
+            page.data('current-zoom', zoomLevel);
         });
 
         // Enable scrolling on viewer
@@ -1430,8 +1447,8 @@ function applyZoom(scale, clickX, clickY) {
                 console.log('Actual scroll after set:', viewer[0].scrollLeft, viewer[0].scrollTop);
             } else {
                 // Center on first zoom
-                viewer[0].scrollLeft = (containerWidth - viewerWidth) / 2;
-                viewer[0].scrollTop = (containerHeight - viewerHeight) / 2;
+                viewer[0].scrollLeft = (totalWidth - viewerWidth) / 2;
+                viewer[0].scrollTop = (totalHeight - viewerHeight) / 2;
             }
         }, 0);
 
@@ -1457,6 +1474,22 @@ function applyZoom(scale, clickX, clickY) {
                 left: '',
                 width: '',
                 height: ''
+            });
+
+            // Reset page sizes
+            flipbookElement.find('.page').each(function() {
+                const page = $(this);
+                const originalWidth = page.data('original-width');
+                const originalHeight = page.data('original-height');
+
+                if (originalWidth && originalHeight) {
+                    page.css({
+                        width: originalWidth + 'px',
+                        height: originalHeight + 'px',
+                        transform: ''
+                    });
+                    page.data('current-zoom', 1);
+                }
             });
         }
 
