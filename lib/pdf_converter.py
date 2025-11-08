@@ -1357,17 +1357,13 @@ function applyZoom(scale, clickX, clickY) {
             height: totalHeight + 'px'
         });
 
-        // Position flipbook with padding offset using margin
-        // IMPORTANT: Flipbook expands from top-left with scale, so we need
-        // to account for where it currently is BEFORE adding margin
+        // Position flipbook with padding offset
         flipbookElement.css({
             transform: `scale(${zoomLevel})`,
             transformOrigin: 'top left',
-            marginLeft: paddingX + 'px',
-            marginTop: paddingY + 'px',
-            position: 'absolute',  // Use absolute so margin creates offset in container
-            top: '0',
-            left: '0'
+            position: 'absolute',
+            top: paddingY + 'px',
+            left: paddingX + 'px'
         });
 
         // Enable scrolling on viewer
@@ -1438,8 +1434,6 @@ function applyZoom(scale, clickX, clickY) {
         flipbookElement.css({
             transform: 'scale(1)',
             transformOrigin: 'center center',
-            marginLeft: '',
-            marginTop: '',
             position: 'relative',
             top: '',
             left: ''
