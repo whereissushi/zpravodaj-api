@@ -1324,12 +1324,13 @@ function applyZoom(scale, clickX, clickY) {
     if (zoomActive) {
         viewer.addClass('zoomed');
 
-        // Create a container div for scrolling if it doesn't exist
-        if (!$('#zoom-container').length) {
-            flipbookElement.wrap('<div id="zoom-container"></div>');
+        // Create wrapper and container structure for proper scrolling
+        if (!$('#zoom-wrapper').length) {
+            flipbookElement.wrap('<div id="zoom-container"><div id="zoom-wrapper"></div></div>');
         }
 
         const container = $('#zoom-container');
+        const wrapper = $('#zoom-wrapper');
 
         // Get viewport and flipbook dimensions
         const viewerWidth = viewer.width();
@@ -1341,26 +1342,33 @@ function applyZoom(scale, clickX, clickY) {
         const scaledWidth = baseWidth * zoomLevel;
         const scaledHeight = baseHeight * zoomLevel;
 
-        // Massive padding for truly unlimited panning in all directions
-        // Use 200% of scaled dimensions on each side
+        // Massive padding for truly unlimited panning
         const paddingX = scaledWidth * 2;
         const paddingY = scaledHeight * 2;
 
-        // Set container size - just enough for the scaled content plus minimal padding
-        const containerWidth = scaledWidth + paddingX * 2;
-        const containerHeight = scaledHeight + paddingY * 2;
+        // Total scrollable area
+        const totalWidth = scaledWidth + paddingX * 2;
+        const totalHeight = scaledHeight + paddingY * 2;
 
-        // Set container to be SMALLER - just enough for visible content
-        // We'll handle scrolling differently
+        // Container takes full scrollable space
         container.css({
-            width: scaledWidth + 'px',
-            height: scaledHeight + 'px',
+            width: totalWidth + 'px',
+            height: totalHeight + 'px',
             position: 'relative',
             padding: '0',
-            margin: `${paddingY}px ${paddingX}px`  // Use margin for padding space
+            margin: '0'
         });
 
-        // Apply transform to flipbook at origin
+        // Wrapper positions the scaled flipbook with padding offset
+        wrapper.css({
+            position: 'absolute',
+            top: paddingY + 'px',
+            left: paddingX + 'px',
+            width: scaledWidth + 'px',
+            height: scaledHeight + 'px'
+        });
+
+        // Flipbook scales from top-left inside wrapper
         flipbookElement.css({
             transform: `scale(${zoomLevel})`,
             transformOrigin: 'top left',
@@ -1395,18 +1403,19 @@ function applyZoom(scale, clickX, clickY) {
 
                 console.log('Target viewport pos:', targetViewportX, targetViewportY);
 
-                // NEW APPROACH: Container has margin for padding
-                // The scaled point is at (scaledPointX, scaledPointY) in container
-                // Container is offset by margin (paddingX, paddingY)
-                // Total position in viewer scroll space: margin + scaledPoint
+                // NEW STRUCTURE: container > wrapper > flipbook
+                // Wrapper is positioned at (paddingX, paddingY)
+                // Scaled point is at (scaledPointX, scaledPointY) within wrapper
+                // Total position in container: paddingX + scaledPointX
                 // We want this to appear at targetViewportX/Y in viewport
+                // So: scroll = (paddingX + scaledPointX) - targetViewportX
 
-                const targetScrollX = scaledPointX - targetViewportX;
-                const targetScrollY = scaledPointY - targetViewportY;
+                const targetScrollX = paddingX + scaledPointX - targetViewportX;
+                const targetScrollY = paddingY + scaledPointY - targetViewportY;
 
                 console.log('Calculated scroll:', targetScrollX, targetScrollY);
                 console.log('Padding:', paddingX, paddingY);
-                console.log('Container size:', containerWidth, containerHeight);
+                console.log('Total container size:', totalWidth, totalHeight);
                 console.log('Viewer size:', viewerWidth, viewerHeight);
                 console.log('Scroll range:', viewer[0].scrollWidth, viewer[0].scrollHeight);
                 console.log('Max scroll:', viewer[0].scrollWidth - viewerWidth, viewer[0].scrollHeight - viewerHeight);
@@ -1432,15 +1441,18 @@ function applyZoom(scale, clickX, clickY) {
             'overflow': 'hidden'
         });
 
-        // Reset zoom container
-        if ($('#zoom-container').length) {
-            $('#zoom-container').replaceWith(flipbookElement);
+        // Reset zoom container and wrapper
+        if ($('#zoom-wrapper').length) {
+            // Unwrap from both wrapper and container
+            flipbookElement.unwrap().unwrap();
             flipbookElement.css({
                 transform: 'scale(1)',
                 transformOrigin: 'center center',
                 position: 'relative',
                 top: '',
-                left: ''
+                left: '',
+                width: '',
+                height: ''
             });
         }
 
