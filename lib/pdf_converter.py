@@ -1324,14 +1324,6 @@ function applyZoom(scale, clickX, clickY) {
     if (zoomActive) {
         viewer.addClass('zoomed');
 
-        // Create wrapper and container structure for proper scrolling
-        if (!$('#zoom-wrapper').length) {
-            flipbookElement.wrap('<div id="zoom-container"><div id="zoom-wrapper"></div></div>');
-        }
-
-        const container = $('#zoom-container');
-        const wrapper = $('#zoom-wrapper');
-
         // Get viewport and flipbook dimensions
         const viewerWidth = viewer.width();
         const viewerHeight = viewer.height();
@@ -1350,54 +1342,25 @@ function applyZoom(scale, clickX, clickY) {
         const totalWidth = scaledWidth + paddingX * 2;
         const totalHeight = scaledHeight + paddingY * 2;
 
-        // Container takes full scrollable space
-        container.css({
+        // Apply zoom using transform (turn.js needs original dimensions)
+        // But create a SPACER div to establish scrollable area
+        if (!$('#zoom-spacer').length) {
+            viewer.prepend('<div id="zoom-spacer" style="position: absolute; top: 0; left: 0; pointer-events: none;"></div>');
+        }
+
+        const spacer = $('#zoom-spacer');
+        spacer.css({
             width: totalWidth + 'px',
-            height: totalHeight + 'px',
-            position: 'relative',
-            padding: '0',
-            margin: '0'
+            height: totalHeight + 'px'
         });
 
-        // Wrapper positions the flipbook with padding offset
-        wrapper.css({
-            position: 'absolute',
-            top: paddingY + 'px',
-            left: paddingX + 'px',
-            width: scaledWidth + 'px',
-            height: scaledHeight + 'px'
-        });
-
-        // DON'T use transform:scale! It doesn't affect scroll area!
-        // Instead, actually resize the flipbook and its page elements
+        // Position flipbook with padding offset using margin
         flipbookElement.css({
-            position: 'relative',
-            width: scaledWidth + 'px',
-            height: scaledHeight + 'px',
-            transform: 'none'
-        });
-
-        // Resize page elements to scaled size (no transform!)
-        flipbookElement.find('.page').each(function() {
-            const page = $(this);
-            const originalWidth = page.data('original-width') || page.width() / (page.data('current-zoom') || 1);
-            const originalHeight = page.data('original-height') || page.height() / (page.data('current-zoom') || 1);
-
-            // Store original dimensions if not stored yet
-            if (!page.data('original-width')) {
-                page.data('original-width', originalWidth);
-                page.data('original-height', originalHeight);
-            }
-
-            // Set actual width/height to scaled size
-            page.css({
-                width: (originalWidth * zoomLevel) + 'px',
-                height: (originalHeight * zoomLevel) + 'px',
-                transform: 'none'
-            });
-
-            // Store current zoom for future calculations
-            page.data('current-zoom', zoomLevel);
+            transform: `scale(${zoomLevel})`,
+            transformOrigin: 'top left',
+            marginLeft: paddingX + 'px',
+            marginTop: paddingY + 'px',
+            position: 'relative'
         });
 
         // Enable scrolling on viewer
@@ -1462,36 +1425,16 @@ function applyZoom(scale, clickX, clickY) {
             'overflow': 'hidden'
         });
 
-        // Reset zoom container and wrapper
-        if ($('#zoom-wrapper').length) {
-            // Unwrap from both wrapper and container
-            flipbookElement.unwrap().unwrap();
-            flipbookElement.css({
-                transform: 'scale(1)',
-                transformOrigin: 'center center',
-                position: 'relative',
-                top: '',
-                left: '',
-                width: '',
-                height: ''
-            });
+        // Remove spacer and reset flipbook
+        $('#zoom-spacer').remove();
 
-            // Reset page sizes
-            flipbookElement.find('.page').each(function() {
-                const page = $(this);
-                const originalWidth = page.data('original-width');
-                const originalHeight = page.data('original-height');
-
-                if (originalWidth && originalHeight) {
-                    page.css({
-                        width: originalWidth + 'px',
-                        height: originalHeight + 'px',
-                        transform: ''
-                    });
-                    page.data('current-zoom', 1);
-                }
-            });
-        }
+        flipbookElement.css({
+            transform: 'scale(1)',
+            transformOrigin: 'center center',
+            marginLeft: '',
+            marginTop: '',
+            position: 'relative'
+        });
 
         disablePanning();
 
