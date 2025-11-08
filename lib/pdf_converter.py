@@ -1324,6 +1324,9 @@ function applyZoom(scale, clickX, clickY) {
     if (zoomActive) {
         viewer.addClass('zoomed');
 
+        console.log('=== ZOOM START ===');
+        console.log('Previous zoom:', previousZoom, '→ New zoom:', zoomLevel);
+
         // Get viewport and flipbook dimensions
         const viewerWidth = viewer.width();
         const viewerHeight = viewer.height();
@@ -1355,12 +1358,16 @@ function applyZoom(scale, clickX, clickY) {
         });
 
         // Position flipbook with padding offset using margin
+        // IMPORTANT: Flipbook expands from top-left with scale, so we need
+        // to account for where it currently is BEFORE adding margin
         flipbookElement.css({
             transform: `scale(${zoomLevel})`,
             transformOrigin: 'top left',
             marginLeft: paddingX + 'px',
             marginTop: paddingY + 'px',
-            position: 'relative'
+            position: 'absolute',  // Use absolute so margin creates offset in container
+            top: '0',
+            left: '0'
         });
 
         // Enable scrolling on viewer
@@ -1387,15 +1394,15 @@ function applyZoom(scale, clickX, clickY) {
 
                 console.log('Target viewport pos:', targetViewportX, targetViewportY);
 
-                // NEW STRUCTURE: container > wrapper > flipbook
-                // Wrapper is positioned at (paddingX, paddingY)
-                // Scaled point is at (scaledPointX, scaledPointY) within wrapper
-                // Total position in container: paddingX + scaledPointX
-                // We want this to appear at targetViewportX/Y in viewport
-                // So: scroll = (paddingX + scaledPointX) - targetViewportX
+                // Position in scroll container: margin + scaled point
+                const pointInContainerX = paddingX + scaledPointX;
+                const pointInContainerY = paddingY + scaledPointY;
 
-                const targetScrollX = paddingX + scaledPointX - targetViewportX;
-                const targetScrollY = paddingY + scaledPointY - targetViewportY;
+                console.log('Point position in container:', pointInContainerX, pointInContainerY);
+
+                // To make this point appear at targetViewport, scroll to:
+                const targetScrollX = pointInContainerX - targetViewportX;
+                const targetScrollY = pointInContainerY - targetViewportY;
 
                 console.log('Calculated scroll:', targetScrollX, targetScrollY);
                 console.log('Padding:', paddingX, paddingY);
@@ -1433,7 +1440,9 @@ function applyZoom(scale, clickX, clickY) {
             transformOrigin: 'center center',
             marginLeft: '',
             marginTop: '',
-            position: 'relative'
+            position: 'relative',
+            top: '',
+            left: ''
         });
 
         disablePanning();
