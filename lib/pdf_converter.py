@@ -382,10 +382,10 @@ body {
     cursor: move;
 }
 
-#flipbook-viewer.zoom-cursor-mode {
-    cursor: zoom-in !important;
-}
-
+/* Zoom cursor mode - highest priority */
+#flipbook-viewer.zoom-cursor-mode,
+#flipbook-viewer.zoom-cursor-mode *,
+#flipbook-viewer.zoom-cursor-mode .page,
 #flipbook-viewer.zoom-cursor-mode.zoomed {
     cursor: zoom-in !important;
 }
@@ -1291,23 +1291,29 @@ function applyZoom(scale, clickX, clickY) {
     const viewer = $('#flipbook-viewer');
     const flipbookElement = $('#flipbook');
 
-    // Store the point we want to center on after zoom
-    let targetPointX = null;
-    let targetPointY = null;
+    // Store where we clicked relative to the FLIPBOOK (not container/viewport)
+    let flipbookClickX = null;
+    let flipbookClickY = null;
 
-    // If click position provided (zoom-to-click), calculate the actual document position
-    if (clickX !== undefined && clickY !== undefined) {
-        // Get current scroll position
+    if (clickX !== undefined && clickY !== undefined && previousZoom >= 1) {
+        // Get current scroll position and flipbook offset
         const currentScrollX = viewer[0].scrollLeft || 0;
         const currentScrollY = viewer[0].scrollTop || 0;
 
-        // Calculate the actual position in the document that was clicked
-        targetPointX = currentScrollX + clickX;
-        targetPointY = currentScrollY + clickY;
-    } else if (previousZoom > 1 && viewer[0].scrollWidth > 0) {
-        // Maintain center of current view
-        targetPointX = viewer[0].scrollLeft + viewer.width() / 2;
-        targetPointY = viewer[0].scrollTop + viewer.height() / 2;
+        // OLD container info
+        const oldContainer = $('#zoom-container');
+        const oldPaddingX = previousZoom > 1 ? (flipbookElement.width() * previousZoom * 2) : 0;
+        const oldPaddingY = previousZoom > 1 ? (flipbookElement.height() * previousZoom * 2) : 0;
+
+        // Position in OLD scaled flipbook coordinates
+        const posInOldContainer = {
+            x: currentScrollX + clickX - oldPaddingX,
+            y: currentScrollY + clickY - oldPaddingY
+        };
+
+        // Convert to original flipbook coordinates (before any scaling)
+        flipbookClickX = posInOldContainer.x / (previousZoom || 1);
+        flipbookClickY = posInOldContainer.y / (previousZoom || 1);
     }
 
     // Update zoom active flag
@@ -1371,22 +1377,22 @@ function applyZoom(scale, clickX, clickY) {
             'overflow-y': 'auto'
         });
 
-        // Position the viewport to center on target point
+        // Position the viewport based on where user clicked
         setTimeout(() => {
-            if (targetPointX !== null && targetPointY !== null) {
-                // Calculate the zoom ratio
-                const zoomRatio = zoomLevel / (previousZoom || 1);
+            if (flipbookClickX !== null && flipbookClickY !== null) {
+                // Convert flipbook coordinates to NEW scaled coordinates
+                const newScaledX = flipbookClickX * zoomLevel;
+                const newScaledY = flipbookClickY * zoomLevel;
 
-                // Scale the target point by the zoom ratio
-                const newTargetX = targetPointX * zoomRatio;
-                const newTargetY = targetPointY * zoomRatio;
+                // Add padding offset (flipbook is positioned at paddingX, paddingY)
+                const pointInNewContainer = {
+                    x: paddingX + newScaledX,
+                    y: paddingY + newScaledY
+                };
 
-                // Center the target point in viewport
-                const newScrollX = newTargetX - (clickX !== undefined ? clickX : viewer.width() / 2);
-                const newScrollY = newTargetY - (clickY !== undefined ? clickY : viewer.height() / 2);
-
-                viewer[0].scrollLeft = newScrollX;
-                viewer[0].scrollTop = newScrollY;
+                // Set scroll so this point appears at clickX, clickY in viewport
+                viewer[0].scrollLeft = pointInNewContainer.x - clickX;
+                viewer[0].scrollTop = pointInNewContainer.y - clickY;
             } else {
                 // Center on first zoom
                 viewer[0].scrollLeft = (containerWidth - viewerWidth) / 2;
