@@ -1359,7 +1359,7 @@ function applyZoom(scale, clickX, clickY) {
             margin: '0'
         });
 
-        // Wrapper positions the scaled flipbook with padding offset
+        // Wrapper positions the flipbook with padding offset
         wrapper.css({
             position: 'absolute',
             top: paddingY + 'px',
@@ -1368,15 +1368,19 @@ function applyZoom(scale, clickX, clickY) {
             height: scaledHeight + 'px'
         });
 
-        // Flipbook scales from top-left inside wrapper
+        // DON'T use transform:scale! It doesn't affect scroll area!
+        // Instead, actually resize the flipbook and its contents
         flipbookElement.css({
+            position: 'relative',
+            width: scaledWidth + 'px',
+            height: scaledHeight + 'px',
+            transform: 'none'
+        });
+
+        // Scale all page images using CSS
+        flipbookElement.find('.page, .page img').css({
             transform: `scale(${zoomLevel})`,
-            transformOrigin: 'top left',
-            position: 'absolute',
-            top: '0px',
-            left: '0px',
-            width: baseWidth + 'px',
-            height: baseHeight + 'px'
+            transformOrigin: 'top left'
         });
 
         // Enable scrolling on viewer
