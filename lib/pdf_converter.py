@@ -1350,25 +1350,25 @@ function applyZoom(scale, clickX, clickY) {
         const containerWidth = scaledWidth + paddingX * 2;
         const containerHeight = scaledHeight + paddingY * 2;
 
+        // Set container to be SMALLER - just enough for visible content
+        // We'll handle scrolling differently
         container.css({
-            width: containerWidth + 'px',
-            height: containerHeight + 'px',
+            width: scaledWidth + 'px',
+            height: scaledHeight + 'px',
             position: 'relative',
-            padding: '0'
+            padding: '0',
+            margin: `${paddingY}px ${paddingX}px`  // Use margin for padding space
         });
 
-        // Position the flipbook properly centered
-        // The transform scales from center, so we need to position the original-sized element
-        const positionX = paddingX;
-        const positionY = paddingY;
-
-        // Apply transform to flipbook
+        // Apply transform to flipbook at origin
         flipbookElement.css({
             transform: `scale(${zoomLevel})`,
-            transformOrigin: 'top left', // Changed from center to top-left for predictable positioning
+            transformOrigin: 'top left',
             position: 'absolute',
-            top: positionY + 'px',
-            left: positionX + 'px'
+            top: '0px',
+            left: '0px',
+            width: baseWidth + 'px',
+            height: baseHeight + 'px'
         });
 
         // Enable scrolling on viewer
@@ -1395,13 +1395,14 @@ function applyZoom(scale, clickX, clickY) {
 
                 console.log('Target viewport pos:', targetViewportX, targetViewportY);
 
-                // The flipbook element is positioned at (paddingX, paddingY) in container
-                // The scaled point is at (paddingX + scaledPointX, paddingY + scaledPointY) in container
+                // NEW APPROACH: Container has margin for padding
+                // The scaled point is at (scaledPointX, scaledPointY) in container
+                // Container is offset by margin (paddingX, paddingY)
+                // Total position in viewer scroll space: margin + scaledPoint
                 // We want this to appear at targetViewportX/Y in viewport
-                // So: scrollLeft = (paddingX + scaledPointX) - targetViewportX
 
-                const targetScrollX = paddingX + scaledPointX - targetViewportX;
-                const targetScrollY = paddingY + scaledPointY - targetViewportY;
+                const targetScrollX = scaledPointX - targetViewportX;
+                const targetScrollY = scaledPointY - targetViewportY;
 
                 console.log('Calculated scroll:', targetScrollX, targetScrollY);
                 console.log('Padding:', paddingX, paddingY);
