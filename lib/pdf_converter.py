@@ -1291,29 +1291,39 @@ function applyZoom(scale, clickX, clickY) {
     const viewer = $('#flipbook-viewer');
     const flipbookElement = $('#flipbook');
 
-    // Store where we clicked relative to the FLIPBOOK (not container/viewport)
-    let flipbookClickX = null;
-    let flipbookClickY = null;
+    // Calculate which point in the FLIPBOOK was clicked
+    let flipbookPointX = null;
+    let flipbookPointY = null;
 
-    if (clickX !== undefined && clickY !== undefined && previousZoom >= 1) {
-        // Get current scroll position and flipbook offset
-        const currentScrollX = viewer[0].scrollLeft || 0;
-        const currentScrollY = viewer[0].scrollTop || 0;
+    if (clickX !== undefined && clickY !== undefined) {
+        const baseWidth = flipbookElement.width();
+        const baseHeight = flipbookElement.height();
 
-        // OLD container info
-        const oldContainer = $('#zoom-container');
-        const oldPaddingX = previousZoom > 1 ? (flipbookElement.width() * previousZoom * 2) : 0;
-        const oldPaddingY = previousZoom > 1 ? (flipbookElement.height() * previousZoom * 2) : 0;
+        if (previousZoom > 1) {
+            // Already zoomed - calculate from scroll position
+            const currentScrollX = viewer[0].scrollLeft || 0;
+            const currentScrollY = viewer[0].scrollTop || 0;
+            const oldPaddingX = baseWidth * previousZoom * 2;
+            const oldPaddingY = baseHeight * previousZoom * 2;
 
-        // Position in OLD scaled flipbook coordinates
-        const posInOldContainer = {
-            x: currentScrollX + clickX - oldPaddingX,
-            y: currentScrollY + clickY - oldPaddingY
-        };
+            // Where in the OLD scaled flipbook?
+            const posX = currentScrollX + clickX - oldPaddingX;
+            const posY = currentScrollY + clickY - oldPaddingY;
 
-        // Convert to original flipbook coordinates (before any scaling)
-        flipbookClickX = posInOldContainer.x / (previousZoom || 1);
-        flipbookClickY = posInOldContainer.y / (previousZoom || 1);
+            // Convert to unscaled flipbook coordinates
+            flipbookPointX = posX / previousZoom;
+            flipbookPointY = posY / previousZoom;
+        } else {
+            // Not zoomed yet - flipbook is centered in viewer
+            const flipbookOffset = flipbookElement.offset();
+            const viewerOffset = viewer.offset();
+
+            // Click position relative to flipbook
+            flipbookPointX = clickX - (flipbookOffset.left - viewerOffset.left);
+            flipbookPointY = clickY - (flipbookOffset.top - viewerOffset.top);
+        }
+
+        console.log('Flipbook point clicked:', flipbookPointX, flipbookPointY);
     }
 
     // Update zoom active flag
@@ -1379,20 +1389,29 @@ function applyZoom(scale, clickX, clickY) {
 
         // Position the viewport based on where user clicked
         setTimeout(() => {
-            if (flipbookClickX !== null && flipbookClickY !== null) {
-                // Convert flipbook coordinates to NEW scaled coordinates
-                const newScaledX = flipbookClickX * zoomLevel;
-                const newScaledY = flipbookClickY * zoomLevel;
+            if (flipbookPointX !== null && flipbookPointY !== null) {
+                // Scale the flipbook point to new zoom level
+                const scaledPointX = flipbookPointX * zoomLevel;
+                const scaledPointY = flipbookPointY * zoomLevel;
 
-                // Add padding offset (flipbook is positioned at paddingX, paddingY)
-                const pointInNewContainer = {
-                    x: paddingX + newScaledX,
-                    y: paddingY + newScaledY
-                };
+                console.log('Scaled point:', scaledPointX, scaledPointY);
+                console.log('Padding:', paddingX, paddingY);
 
-                // Set scroll so this point appears at clickX, clickY in viewport
-                viewer[0].scrollLeft = pointInNewContainer.x - clickX;
-                viewer[0].scrollTop = pointInNewContainer.y - clickY;
+                // Position in new container (flipbook starts at paddingX, paddingY)
+                const containerPointX = paddingX + scaledPointX;
+                const containerPointY = paddingY + scaledPointY;
+
+                console.log('Container point:', containerPointX, containerPointY);
+
+                // Scroll so this point appears at the click position
+                const targetScrollX = containerPointX - clickX;
+                const targetScrollY = containerPointY - clickY;
+
+                console.log('Target scroll:', targetScrollX, targetScrollY);
+                console.log('Click position:', clickX, clickY);
+
+                viewer[0].scrollLeft = targetScrollX;
+                viewer[0].scrollTop = targetScrollY;
             } else {
                 // Center on first zoom
                 viewer[0].scrollLeft = (containerWidth - viewerWidth) / 2;
@@ -1435,9 +1454,20 @@ function applyZoom(scale, clickX, clickY) {
     // Stop any turn animation
     flipbook.turn('stop');
 
-    // Update display immediately
-    if (typeof updateZoomDisplay === 'function') {
-        updateZoomDisplay();
+    // Update zoom display
+    zoomValue.text(Math.round(zoomLevel * 100) + '%');
+
+    // Update button states
+    if (zoomLevel <= 0.5) {
+        zoomOutBtn.prop('disabled', true);
+    } else {
+        zoomOutBtn.prop('disabled', false);
+    }
+
+    if (zoomLevel >= 3) {
+        zoomInBtn.prop('disabled', true);
+    } else {
+        zoomInBtn.prop('disabled', false);
     }
 }
 
