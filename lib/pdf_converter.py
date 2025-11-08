@@ -1405,6 +1405,10 @@ function applyZoom(scale, clickX, clickY) {
 
                 console.log('Calculated scroll:', targetScrollX, targetScrollY);
                 console.log('Padding:', paddingX, paddingY);
+                console.log('Container size:', containerWidth, containerHeight);
+                console.log('Viewer size:', viewerWidth, viewerHeight);
+                console.log('Scroll range:', viewer[0].scrollWidth, viewer[0].scrollHeight);
+                console.log('Max scroll:', viewer[0].scrollWidth - viewerWidth, viewer[0].scrollHeight - viewerHeight);
 
                 viewer[0].scrollLeft = targetScrollX;
                 viewer[0].scrollTop = targetScrollY;
