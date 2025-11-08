@@ -1256,10 +1256,21 @@ function updateThumbnails(page) {
 }
 
 function applyZoom(scale) {
+    const previousZoom = zoomLevel;
     zoomLevel = Math.max(0.5, Math.min(3, scale));
 
     const viewer = $('#flipbook-viewer');
     const flipbookElement = $('#flipbook');
+
+    // Store current scroll position before zoom change (if already zoomed)
+    let currentScrollRatioX = 0;
+    let currentScrollRatioY = 0;
+
+    if (previousZoom > 1 && viewer[0].scrollWidth > 0) {
+        // Calculate current position as ratio of scroll
+        currentScrollRatioX = (viewer[0].scrollLeft + viewer.width() / 2) / viewer[0].scrollWidth;
+        currentScrollRatioY = (viewer[0].scrollTop + viewer.height() / 2) / viewer[0].scrollHeight;
+    }
 
     // Update zoom active flag
     zoomActive = zoomLevel > 1;
@@ -1285,12 +1296,13 @@ function applyZoom(scale) {
         const scaledWidth = baseWidth * zoomLevel;
         const scaledHeight = baseHeight * zoomLevel;
 
-        // Calculate padding dynamically based on zoom level
-        // More padding at higher zoom levels for better pan experience
-        const paddingX = Math.max(viewerWidth * 0.5, scaledWidth * 0.4);
-        const paddingY = Math.max(viewerHeight * 0.5, scaledHeight * 0.4);
+        // Use smaller padding to prevent too much empty space
+        // But ensure minimum padding for panning
+        const minPadding = 100; // Minimum 100px padding on each side
+        const paddingX = Math.max(minPadding, viewerWidth * 0.2);
+        const paddingY = Math.max(minPadding, viewerHeight * 0.2);
 
-        // Set container size to accommodate scaled content plus dynamic padding
+        // Set container size - just enough for the scaled content plus minimal padding
         const containerWidth = scaledWidth + paddingX * 2;
         const containerHeight = scaledHeight + paddingY * 2;
 
@@ -1298,17 +1310,18 @@ function applyZoom(scale) {
             width: containerWidth + 'px',
             height: containerHeight + 'px',
             position: 'relative',
-            padding: '0' // No CSS padding, we'll position manually
+            padding: '0'
         });
 
-        // Center the flipbook in the container
-        const positionX = paddingX + (scaledWidth - baseWidth) / 2;
-        const positionY = paddingY + (scaledHeight - baseHeight) / 2;
+        // Position the flipbook properly centered
+        // The transform scales from center, so we need to position the original-sized element
+        const positionX = paddingX;
+        const positionY = paddingY;
 
-        // Apply transform to flipbook with centered positioning
+        // Apply transform to flipbook
         flipbookElement.css({
             transform: `scale(${zoomLevel})`,
-            transformOrigin: 'center center',
+            transformOrigin: 'top left', // Changed from center to top-left for predictable positioning
             position: 'absolute',
             top: positionY + 'px',
             left: positionX + 'px'
@@ -1321,12 +1334,21 @@ function applyZoom(scale) {
             'overflow-y': 'auto'
         });
 
-        // Scroll to center initially
+        // Maintain scroll position or center if first zoom
         setTimeout(() => {
-            const scrollLeft = Math.max(0, (containerWidth - viewerWidth) / 2);
-            const scrollTop = Math.max(0, (containerHeight - viewerHeight) / 2);
-            viewer.scrollLeft(scrollLeft);
-            viewer.scrollTop(scrollTop);
+            if (previousZoom > 1 && currentScrollRatioX > 0) {
+                // Maintain relative position when changing zoom levels
+                const newScrollLeft = currentScrollRatioX * viewer[0].scrollWidth - viewer.width() / 2;
+                const newScrollTop = currentScrollRatioY * viewer[0].scrollHeight - viewer.height() / 2;
+                viewer[0].scrollLeft = Math.max(0, Math.min(newScrollLeft, viewer[0].scrollWidth - viewer.width()));
+                viewer[0].scrollTop = Math.max(0, Math.min(newScrollTop, viewer[0].scrollHeight - viewer.height()));
+            } else {
+                // Center on first zoom
+                const scrollLeft = Math.max(0, (containerWidth - viewerWidth) / 2);
+                const scrollTop = Math.max(0, (containerHeight - viewerHeight) / 2);
+                viewer[0].scrollLeft = scrollLeft;
+                viewer[0].scrollTop = scrollTop;
+            }
         }, 0);
 
         // Enable panning if pan tool is active
