@@ -826,7 +826,7 @@ body {
     align-items: center;
     gap: 8px;
     padding: 4px 8px;
-    z-index: 1000;
+    z-index: 1001; /* Higher than overlays to always be visible */
     height: 36px;
 }
 
@@ -1192,7 +1192,7 @@ $(document).ready(function() {
         });
     }
 
-    // Zoom toggle button - activates zoom cursor mode
+    // Zoom toggle button - shows zoom panel and activates zoom cursor mode
     zoomToggleBtn.click(function() {
         isZoomCursorMode = !isZoomCursorMode;
         const viewer = $('#flipbook-viewer');
@@ -1200,6 +1200,7 @@ $(document).ready(function() {
         if (isZoomCursorMode) {
             $(this).addClass('active');
             viewer.addClass('zoom-cursor-mode');
+            zoomPanel.show(); // Show zoom panel
             // Disable pan mode if active
             if (isPanMode) {
                 isPanMode = false;
@@ -1210,6 +1211,7 @@ $(document).ready(function() {
         } else {
             $(this).removeClass('active');
             viewer.removeClass('zoom-cursor-mode');
+            zoomPanel.hide(); // Hide zoom panel when cursor mode disabled
         }
     });
 
@@ -1370,11 +1372,13 @@ function applyZoom(scale, clickX, clickY) {
         // Maintain scroll position or center based on click/current position
         setTimeout(() => {
             if (clickX !== undefined && clickY !== undefined) {
-                // Zoom to click position - center the clicked point
-                const newScrollLeft = currentScrollRatioX * viewer[0].scrollWidth - clickX;
-                const newScrollTop = currentScrollRatioY * viewer[0].scrollHeight - clickY;
-                viewer[0].scrollLeft = Math.max(0, Math.min(newScrollLeft, viewer[0].scrollWidth - viewer.width()));
-                viewer[0].scrollTop = Math.max(0, Math.min(newScrollTop, viewer[0].scrollHeight - viewer.height()));
+                // Zoom to click position - center the clicked point in viewport
+                // The click position ratio should map to the same visual point after zoom
+                const targetScrollX = currentScrollRatioX * containerWidth - clickX;
+                const targetScrollY = currentScrollRatioY * containerHeight - clickY;
+
+                viewer[0].scrollLeft = Math.max(0, Math.min(targetScrollX, viewer[0].scrollWidth - viewer.width()));
+                viewer[0].scrollTop = Math.max(0, Math.min(targetScrollY, viewer[0].scrollHeight - viewer.height()));
             } else if (previousZoom > 1 && currentScrollRatioX > 0) {
                 // Maintain relative position when changing zoom levels
                 const newScrollLeft = currentScrollRatioX * viewer[0].scrollWidth - viewer.width() / 2;
