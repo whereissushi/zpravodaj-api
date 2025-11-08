@@ -1381,34 +1381,35 @@ function applyZoom(scale, clickX, clickY) {
         // Position the viewport based on where user clicked
         setTimeout(() => {
             if (flipbookPointX !== null && flipbookPointY !== null) {
-                // Scale the flipbook point to new zoom level
+                // The clicked point in the SCALED flipbook
                 const scaledPointX = flipbookPointX * zoomLevel;
                 const scaledPointY = flipbookPointY * zoomLevel;
 
+                console.log('Flipbook point (unscaled):', flipbookPointX, flipbookPointY);
                 console.log('Scaled point:', scaledPointX, scaledPointY);
-                console.log('Padding:', paddingX, paddingY);
 
-                // Position in new container (flipbook starts at paddingX, paddingY)
-                const containerPointX = paddingX + scaledPointX;
-                const containerPointY = paddingY + scaledPointY;
-
-                console.log('Container point:', containerPointX, containerPointY);
-
-                // Where should this point appear in viewport?
-                // Use the SAME relative position as the original click
-                // If clicked at center of flipbook, should appear at center of viewport
+                // Where should this point appear in the viewport?
+                // Keep it at the SAME place where user clicked!
                 const targetViewportX = clickX !== undefined ? clickX : viewerWidth / 2;
                 const targetViewportY = clickY !== undefined ? clickY : viewerHeight / 2;
 
-                // Calculate scroll to make container point appear at target viewport position
-                const targetScrollX = containerPointX - targetViewportX;
-                const targetScrollY = containerPointY - targetViewportY;
+                console.log('Target viewport pos:', targetViewportX, targetViewportY);
 
-                console.log('Target viewport position:', targetViewportX, targetViewportY);
-                console.log('Target scroll:', targetScrollX, targetScrollY);
+                // The flipbook element is positioned at (paddingX, paddingY) in container
+                // The scaled point is at (paddingX + scaledPointX, paddingY + scaledPointY) in container
+                // We want this to appear at targetViewportX/Y in viewport
+                // So: scrollLeft = (paddingX + scaledPointX) - targetViewportX
+
+                const targetScrollX = paddingX + scaledPointX - targetViewportX;
+                const targetScrollY = paddingY + scaledPointY - targetViewportY;
+
+                console.log('Calculated scroll:', targetScrollX, targetScrollY);
+                console.log('Padding:', paddingX, paddingY);
 
                 viewer[0].scrollLeft = targetScrollX;
                 viewer[0].scrollTop = targetScrollY;
+
+                console.log('Actual scroll after set:', viewer[0].scrollLeft, viewer[0].scrollTop);
             } else {
                 // Center on first zoom
                 viewer[0].scrollLeft = (containerWidth - viewerWidth) / 2;
