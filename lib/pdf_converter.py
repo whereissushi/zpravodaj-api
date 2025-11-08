@@ -1370,7 +1370,8 @@ function applyZoom(scale, clickX, clickY) {
         viewer.css({
             'overflow': 'auto',
             'overflow-x': 'auto',
-            'overflow-y': 'auto'
+            'overflow-y': 'auto',
+            'position': 'relative'  // So absolute children are positioned relative to viewer
         });
 
         // Position the viewport based on where user clicked
