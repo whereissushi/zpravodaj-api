@@ -84,7 +84,14 @@ unzip -l output.zip
 ```bash
 # Push to main branch - Railway auto-deploys from GitHub
 git push origin main
+
+# Deployment typically takes 8-10 minutes:
+# - Nix package installation: 5-6 minutes
+# - PyMuPDF wheel compilation: 2-3 minutes
+# - Subsequent builds with cache: 2-3 minutes
 ```
+
+**Important**: Railway auto-deploys from the `main` branch via GitHub integration. Monitor deployment status in Railway dashboard. The project is named "handsome-flexibility" in Railway.
 
 **Vercel** (legacy, 4.5 MB limit):
 ```bash
@@ -161,7 +168,8 @@ This is normal - subsequent builds use cache and are faster (~2-3 minutes).
 
 The output HTML flipbook includes:
 - **Drag-to-flip**: Realistic page turning by dragging pages (turn.js)
-- **Zoom-on-click**: Click anywhere on page to zoom 2x to that point, click again to reset
+- **Zoom-to-click**: Click magnifying glass icon to enable zoom cursor, then click anywhere to zoom to that exact point
+- **Pan tool**: After zooming, use pan tool (hand icon) to drag the zoomed view in any direction
 - **Sound effects**: Page flip sound with toggle button (base64 WAV embedded)
 - **Share button**: Web Share API with clipboard fallback
 - **Navigation**: Arrow buttons, keyboard shortcuts (←/→, PageUp/PageDown, Space, Home/End)
@@ -172,20 +180,86 @@ The output HTML flipbook includes:
 
 **Important**: The flipbook depends on CDN resources (jQuery, turn.js, Font Awesome). Ensure internet connectivity for full functionality.
 
+### Zoom & Pan Architecture
+
+The zoom/pan system uses a **spacer div pattern** to create unlimited scrollable area:
+
+1. **Spacer div** (`#zoom-spacer`): Invisible div with `width: totalWidth` and `height: totalHeight` to establish scrollable area in browser
+2. **Flipbook positioning**: Uses `position: absolute` with `top/left` offset by `paddingX/paddingY` (200% of scaled flipbook size)
+3. **Transform scaling**: Flipbook uses `transform: scale(zoomLevel)` with `transformOrigin: top left` - this is critical because turn.js requires original dimensions
+4. **Scroll calculation**: When user clicks to zoom, calculates exact scroll position to keep clicked point at same viewport location
+
+**Critical constraints**:
+- `transform: scale()` does NOT affect browser's `scrollWidth/scrollHeight` calculations
+- Spacer div must have actual width/height (not transform) to create scrollable area
+- Viewer must have `position: relative` so absolute children are positioned relative to it
+- Turn.js manipulates page element dimensions, so cannot resize pages directly - must use transform on container
+
+**Debugging zoom issues**: Check console logs for:
+- "Scroll range" should match "Total container size" (if not, spacer isn't working)
+- "Actual scroll after set" should match "Calculated scroll" (if not, browser is clamping values)
+
 ## Modifying Generated Flipbook
 
 All HTML/CSS/JS for the generated flipbook is embedded as Python strings in `lib/pdf_converter.py`:
 
 - **HTML structure**: `_generate_html()` method (lines ~80-150)
 - **CSS styling**: `_get_css()` method (lines ~160-360)
-- **JavaScript logic**: `_get_js()` method (lines ~363-567)
+- **JavaScript logic**: `_get_js()` method (lines ~960-1700+)
+  - Zoom functionality: `applyZoom()` function (lines ~1240-1450)
+  - Pan functionality: `enablePanning()` function (lines ~1520-1620)
+  - Zoom cursor mode: `activateZoomCursor()` function (lines ~210-280)
 
 **Critical**: When modifying these strings:
 1. Use triple-quoted strings (`'''`) for multiline content
 2. Escape curly braces: `{{` and `}}` for literal braces in f-strings
 3. Use f-string interpolation for dynamic values (e.g., `{page_count}`)
 4. Test output by running a conversion and inspecting the generated `index.html`
+5. **Always test zoom/pan after modifications** - use Railway API endpoint to generate a real flipbook and verify in browser
+
+**Testing zoom/pan changes**:
+```bash
+# Convert PDF via API
+curl -X POST https://[your-railway-url]/api/convert \
+  -F "pdf=@test.pdf" \
+  -F "title=Test" \
+  -F "account=test" \
+  -o test-flipbook.zip
+
+# Extract and open in browser
+unzip test-flipbook.zip -d test-output
+# Open test-output/index.html in browser
+# Check browser console for debug logs
+```
 
 **Google Analytics Setup**: Replace `G-XXXXXXXXXX` in `_generate_html()` with actual GA tracking ID.
 
-**Design Reference**: Current design matches Munipolis flipbook style (blue toolbar #2563a6, light background #e8e8e8). See commit "Complete turn.js implementation with drag-to-flip" for full implementation details.
+**Design Reference**: Current design matches Munipolis flipbook style (blue toolbar #2563a6, light background #e8e8e8).
+
+## Development Workflow for UI Changes
+
+When modifying zoom/pan or other flipbook UI features:
+
+1. **Make changes** to `lib/pdf_converter.py` (JavaScript embedded in `_get_js()` method)
+2. **Commit and push** to trigger Railway deployment
+3. **Wait for build** (8-10 minutes for first build, 2-3 minutes with cache)
+4. **Test via API**:
+   ```bash
+   curl -X POST https://[railway-url]/api/convert \
+     -F "pdf=@Zpravodaje/Beroun - Říjen 2025.pdf" \
+     -F "title=Test" \
+     -F "account=test" \
+     -o test-flipbook.zip
+   ```
+5. **Extract and test** in browser:
+   - Unzip the output
+   - Open `index.html` in browser
+   - Open DevTools Console to check debug logs
+   - Test zoom-to-click: Click zoom icon, then click on page
+   - Test pan: After zooming, click pan tool (hand icon) and drag
+   - Verify scroll range matches container size in console logs
+
+**Common issues**:
+- If zoom doesn't center on click: Check "Scroll range" vs "Total container size" in console
+- If pan has boundaries: Check padding calculation (should be 200% of scaled dimensions)
+- If turn.js breaks: Make sure you're only using `transform: scale()` on flipbook container, not resizing page elements directly
