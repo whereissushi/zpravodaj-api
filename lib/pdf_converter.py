@@ -1167,6 +1167,30 @@ $(document).ready(function() {
         isDragging = false;
     });
 
+    // Click navigation - click right half to go forward, left half to go back
+    flipbook.on('click', function(e) {
+        // Skip if pan mode is active
+        if (isPanMode) return;
+
+        // Skip if zoom cursor mode is active
+        if (isZoomCursorMode) return;
+
+        // Skip if actively panning or dragging
+        if (isPanning || isDragging) return;
+
+        // Get click position relative to flipbook
+        const offset = $(this).offset();
+        const relativeX = e.pageX - offset.left;
+        const bookWidth = $(this).width();
+
+        // Click on right half = next page, left half = previous page
+        if (relativeX > bookWidth / 2) {
+            flipbook.turn('next');
+        } else {
+            flipbook.turn('previous');
+        }
+    });
+
     // Mobile touch events
     if (isMobile) {
         let touchStartX = 0;
