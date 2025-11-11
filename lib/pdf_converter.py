@@ -1813,14 +1813,18 @@ function highlightSearchOnPage(pageNum, query) {
             return;
         }
 
-        const pagePosition = pageElement.position(); // position() gives position relative to parent
+        // Get bounding rectangles
+        const pageRect = pageElement[0].getBoundingClientRect();
+        const flipbookRect = $('#flipbook')[0].getBoundingClientRect();
+
         const img = pageElement.find('img');
         const displayWidth = img.width();
         const displayHeight = img.height();
 
         console.log('Display dimensions:', displayWidth, 'x', displayHeight);
         console.log('Original dimensions:', pageData.width, 'x', pageData.height);
-        console.log('Page position (relative to flipbook):', pagePosition);
+        console.log('Page rect:', pageRect);
+        console.log('Flipbook rect:', flipbookRect);
 
         // Calculate scale from original image size
         const scaleX = displayWidth / pageData.width;
@@ -1828,11 +1832,11 @@ function highlightSearchOnPage(pageNum, query) {
 
         console.log('Scale factors:', scaleX, scaleY);
 
-        // Use position directly since overlay is now inside flipbook
-        const relativeLeft = pagePosition.left;
-        const relativeTop = pagePosition.top;
+        // Calculate position relative to flipbook using getBoundingClientRect
+        const relativeLeft = pageRect.left - flipbookRect.left;
+        const relativeTop = pageRect.top - flipbookRect.top;
 
-        console.log('Using position:', relativeLeft, relativeTop);
+        console.log('Calculated relative position:', relativeLeft, relativeTop);
 
         // Draw highlight boxes
         matchingBoxes.forEach((box, idx) => {
