@@ -1136,8 +1136,7 @@ $(document).ready(function() {
             turned: function(e, page) {
                 currentPageSpan.text(page);
                 updateThumbnails(page);
-                // Clear search highlights when page changes
-                $('#highlight-overlay').empty();
+                // Don't clear highlights here - let user clear them manually via search close
                 // Google Analytics
                 if (typeof gtag !== 'undefined') {
                     gtag('event', 'page_turn', {
@@ -1877,8 +1876,15 @@ function goToSearchResult(index) {
     // Go to the page
     flipbook.turn('page', result.page);
 
-    // Highlight search results on the page
-    highlightSearchOnPage(result.page, window.currentSearchQuery);
+    // Clear any pending highlight timeouts
+    if (window.highlightTimeout) {
+        clearTimeout(window.highlightTimeout);
+    }
+
+    // Highlight search results on the page - wait for turn.js animation to complete
+    window.highlightTimeout = setTimeout(() => {
+        highlightSearchOnPage(result.page, window.currentSearchQuery);
+    }, 800);
 
     // Don't close search overlay - keep it open!
     // searchOverlay.hide(); // REMOVED
