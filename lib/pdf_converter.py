@@ -42,7 +42,8 @@ class PDFToFlipbook:
 
         # Generate search data JSON
         search_data = json.dumps({
-            "pages": self.page_texts
+            "pages": self.page_texts,
+            "positions": self.word_positions
         }, ensure_ascii=False, indent=2)
 
         # Generate HTML/CSS/JS with embedded search data
@@ -102,21 +103,60 @@ class PDFToFlipbook:
         total = len(self.pages_images)
         print(f"Starting OCR extraction for {total} pages...")
 
+        # Store word positions for highlighting
+        self.word_positions = {}
+
         for i, page_bytes in enumerate(self.pages_images, start=1):
             try:
                 # Open image from bytes
                 img = Image.open(io.BytesIO(page_bytes))
 
+                # Store original dimensions
+                original_width = img.width
+                original_height = img.height
+
                 # Resize image to speed up OCR (max width 2000px)
                 max_width = 2000
+                scale_factor = 1.0
                 if img.width > max_width:
-                    ratio = max_width / img.width
-                    new_size = (max_width, int(img.height * ratio))
+                    scale_factor = max_width / img.width
+                    new_size = (max_width, int(img.height * scale_factor))
                     img = img.resize(new_size, Image.Resampling.LANCZOS)
 
-                # Run OCR with Czech language
-                text = pytesseract.image_to_string(img, lang='ces', config='--psm 1')
-                self.page_texts[str(i)] = text.strip()
+                # Run OCR with Czech language - get detailed word data
+                ocr_data = pytesseract.image_to_data(img, lang='ces', config='--psm 1', output_type=pytesseract.Output.DICT)
+
+                # Extract text for search
+                text_lines = []
+                word_boxes = []
+
+                for j in range(len(ocr_data['text'])):
+                    word = ocr_data['text'][j].strip()
+                    conf = int(ocr_data['conf'][j]) if ocr_data['conf'][j] != '-1' else 0
+
+                    if word and conf > 30:  # Only keep words with confidence > 30%
+                        text_lines.append(word)
+
+                        # Store word position (normalized to original image size)
+                        x = int(ocr_data['left'][j] / scale_factor)
+                        y = int(ocr_data['top'][j] / scale_factor)
+                        w = int(ocr_data['width'][j] / scale_factor)
+                        h = int(ocr_data['height'][j] / scale_factor)
+
+                        word_boxes.append({
+                            'word': word.lower(),
+                            'x': x,
+                            'y': y,
+                            'w': w,
+                            'h': h
+                        })
+
+                self.page_texts[str(i)] = ' '.join(text_lines)
+                self.word_positions[str(i)] = {
+                    'boxes': word_boxes,
+                    'width': original_width,
+                    'height': original_height
+                }
 
                 # Progress logging
                 if i % 5 == 0 or i == total:
@@ -124,6 +164,7 @@ class PDFToFlipbook:
             except Exception as e:
                 print(f"  WARNING: OCR failed on page {i}: {e}")
                 self.page_texts[str(i)] = ""
+                self.word_positions[str(i)] = {'boxes': [], 'width': 0, 'height': 0}
 
     def _generate_html(self, page_count, search_data_json):
         """Generate HTML content with embedded search data"""
@@ -202,6 +243,8 @@ class PDFToFlipbook:
             <div id="flipbook">
                 {''.join(f'<div class="page"><img src="files/pages/{i}.jpg" alt="Stránka {i}"></div>' for i in range(1, page_count + 1))}
             </div>
+            <!-- Highlight overlay for search results -->
+            <div id="highlight-overlay"></div>
         </div>
     </div>
 
@@ -669,6 +712,25 @@ body {
     font-weight: bold;
 }
 
+/* Highlight overlay on flipbook pages */
+#highlight-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.highlight-box {
+    position: absolute;
+    background: rgba(255, 255, 0, 0.4);
+    border: 2px solid rgba(255, 200, 0, 0.8);
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
 #search-close-btn {
     background: #2563a6;
     color: white;
@@ -1070,6 +1132,8 @@ $(document).ready(function() {
             turned: function(e, page) {
                 currentPageSpan.text(page);
                 updateThumbnails(page);
+                // Clear search highlights when page changes
+                $('#highlight-overlay').empty();
                 // Google Analytics
                 if (typeof gtag !== 'undefined') {
                     gtag('event', 'page_turn', {
@@ -1606,11 +1670,13 @@ searchCloseBtn.click(function() {
     searchOverlay.hide();
     searchInput.val('');
     searchResults.html('');
+    $('#highlight-overlay').empty(); // Clear highlights
 });
 
 searchOverlay.click(function(e) {
     if (e.target === this) {
         searchOverlay.hide();
+        $('#highlight-overlay').empty(); // Clear highlights
     }
 });
 
@@ -1684,6 +1750,79 @@ function performSearch(query) {
     // Store results globally for navigation
     window.currentSearchResults = results;
     window.currentSearchResultIndex = -1;
+    window.currentSearchQuery = query;
+}
+
+function highlightSearchOnPage(pageNum, query) {
+    // Clear existing highlights
+    $('#highlight-overlay').empty();
+
+    if (!searchData || !searchData.positions || !query) {
+        return;
+    }
+
+    const pageData = searchData.positions[pageNum];
+    if (!pageData || !pageData.boxes) {
+        return;
+    }
+
+    const lowerQuery = query.toLowerCase();
+    const queryWords = lowerQuery.split(/\\s+/);
+
+    // Find all matching words on the page
+    const matchingBoxes = pageData.boxes.filter(box =>
+        queryWords.some(qWord => box.word.includes(qWord) || qWord.includes(box.word))
+    );
+
+    if (matchingBoxes.length === 0) {
+        return;
+    }
+
+    // Get the current page element and its dimensions
+    const currentPageElement = flipbook.turn('view')[0] === pageNum
+        ? $('.page').eq(pageNum - 1)
+        : $('.page').eq(pageNum);
+
+    if (!currentPageElement.length) {
+        return;
+    }
+
+    // Wait for page to render
+    setTimeout(() => {
+        const pageElement = flipbook.turn('view').includes(pageNum)
+            ? $(`.page:has(img[src*="/${pageNum}.jpg"])`)
+            : null;
+
+        if (!pageElement || !pageElement.length) {
+            return;
+        }
+
+        const pageOffset = pageElement.offset();
+        const viewerOffset = $('#flipbook-viewer').offset();
+        const img = pageElement.find('img');
+        const displayWidth = img.width();
+        const displayHeight = img.height();
+
+        // Calculate scale from original image size
+        const scaleX = displayWidth / pageData.width;
+        const scaleY = displayHeight / pageData.height;
+
+        // Calculate position relative to viewer
+        const relativeLeft = pageOffset.left - viewerOffset.left;
+        const relativeTop = pageOffset.top - viewerOffset.top;
+
+        // Draw highlight boxes
+        matchingBoxes.forEach(box => {
+            const highlightBox = $('<div class="highlight-box"></div>');
+            highlightBox.css({
+                left: (relativeLeft + box.x * scaleX) + 'px',
+                top: (relativeTop + box.y * scaleY) + 'px',
+                width: (box.w * scaleX) + 'px',
+                height: (box.h * scaleY) + 'px'
+            });
+            $('#highlight-overlay').append(highlightBox);
+        });
+    }, 300);
 }
 
 function goToSearchResult(index) {
@@ -1700,6 +1839,9 @@ function goToSearchResult(index) {
 
     // Go to the page
     flipbook.turn('page', result.page);
+
+    // Highlight search results on the page
+    highlightSearchOnPage(result.page, window.currentSearchQuery);
 
     // Don't close search overlay - keep it open!
     // searchOverlay.hide(); // REMOVED
