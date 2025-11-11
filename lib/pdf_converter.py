@@ -1801,17 +1801,11 @@ function highlightSearchOnPage(pageNum, query) {
         return;
     }
 
-    // Get the current page element and its dimensions
-    const currentPageElement = flipbook.turn('view')[0] === pageNum
-        ? $('.page').eq(pageNum - 1)
-        : $('.page').eq(pageNum);
-
-    if (!currentPageElement.length) {
-        return;
-    }
+    console.log('About to enter setTimeout for rendering...');
 
     // Wait for page to render
     setTimeout(() => {
+        console.log('Inside setTimeout - starting to find page element');
         const currentView = flipbook.turn('view');
         console.log('Current view:', currentView);
 
