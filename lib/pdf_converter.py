@@ -240,11 +240,11 @@ class PDFToFlipbook:
         </div>
 
         <div id="flipbook-viewer">
-            <div id="flipbook">
+            <div id="flipbook" style="position: relative;">
                 {''.join(f'<div class="page"><img src="files/pages/{i}.jpg" alt="Stránka {i}"></div>' for i in range(1, page_count + 1))}
+                <!-- Highlight overlay for search results -->
+                <div id="highlight-overlay"></div>
             </div>
-            <!-- Highlight overlay for search results -->
-            <div id="highlight-overlay"></div>
         </div>
     </div>
 
@@ -717,16 +717,19 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    right: 0;
+    bottom: 0;
     pointer-events: none;
-    z-index: 10;
+    z-index: 100;
+    /* Debug - should see this */
+    /* background: rgba(255, 0, 0, 0.1); */
 }
 
 .highlight-box {
     position: absolute;
-    background: rgba(255, 255, 0, 0.4);
-    border: 2px solid rgba(255, 200, 0, 0.8);
+    background: rgba(255, 255, 0, 0.6);
+    border: 2px solid rgba(255, 140, 0, 0.9);
+    box-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
     pointer-events: none;
     transition: opacity 0.3s;
 }
@@ -1810,16 +1813,14 @@ function highlightSearchOnPage(pageNum, query) {
             return;
         }
 
-        const pageOffset = pageElement.offset();
-        const flipbookOffset = $('#flipbook').offset();
+        const pagePosition = pageElement.position(); // position() gives position relative to parent
         const img = pageElement.find('img');
         const displayWidth = img.width();
         const displayHeight = img.height();
 
         console.log('Display dimensions:', displayWidth, 'x', displayHeight);
         console.log('Original dimensions:', pageData.width, 'x', pageData.height);
-        console.log('Page offset:', pageOffset);
-        console.log('Flipbook offset:', flipbookOffset);
+        console.log('Page position (relative to flipbook):', pagePosition);
 
         // Calculate scale from original image size
         const scaleX = displayWidth / pageData.width;
@@ -1827,11 +1828,11 @@ function highlightSearchOnPage(pageNum, query) {
 
         console.log('Scale factors:', scaleX, scaleY);
 
-        // Calculate position relative to flipbook container
-        const relativeLeft = pageOffset.left - flipbookOffset.left;
-        const relativeTop = pageOffset.top - flipbookOffset.top;
+        // Use position directly since overlay is now inside flipbook
+        const relativeLeft = pagePosition.left;
+        const relativeTop = pagePosition.top;
 
-        console.log('Relative position:', relativeLeft, relativeTop);
+        console.log('Using position:', relativeLeft, relativeTop);
 
         // Draw highlight boxes
         matchingBoxes.forEach((box, idx) => {
