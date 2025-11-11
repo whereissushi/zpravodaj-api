@@ -1883,14 +1883,25 @@ function goToSearchResult(index) {
     $('.search-result-item').removeClass('active');
     $(`.search-result-item[data-result-index="${index}"]`).addClass('active');
 
-    // Store page and query for highlighting after turn completes
-    window.pendingHighlight = {
-        page: result.page,
-        query: window.currentSearchQuery
-    };
+    const currentPage = flipbook.turn('page');
 
-    // Go to the page - highlighting will happen in 'turned' event
-    flipbook.turn('page', result.page);
+    // If already on the page, highlight immediately
+    if (currentPage === result.page) {
+        console.log('Already on page', result.page, '- highlighting immediately');
+        setTimeout(() => {
+            highlightSearchOnPage(result.page, window.currentSearchQuery);
+        }, 100);
+    } else {
+        // Store page and query for highlighting after turn completes
+        window.pendingHighlight = {
+            page: result.page,
+            query: window.currentSearchQuery
+        };
+
+        console.log('Turning to page', result.page, '- will highlight in turned event');
+        // Go to the page - highlighting will happen in 'turned' event
+        flipbook.turn('page', result.page);
+    }
 
     // Don't close search overlay - keep it open!
     // searchOverlay.hide(); // REMOVED
