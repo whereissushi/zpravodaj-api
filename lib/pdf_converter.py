@@ -1790,9 +1790,17 @@ function highlightSearchOnPage(pageNum, query) {
     console.log('Query words:', queryWords);
 
     // Find all matching words on the page
-    const matchingBoxes = pageData.boxes.filter(box =>
-        queryWords.some(qWord => box.word.includes(qWord) || qWord.includes(box.word))
-    );
+    // Match only if word starts with query (avoid matching single letters)
+    const matchingBoxes = pageData.boxes.filter(box => {
+        return queryWords.some(qWord => {
+            // Skip single letter matches unless the query itself is a single letter
+            if (box.word.length === 1 && qWord.length > 1) {
+                return false;
+            }
+            // Match if word starts with query (e.g., "hasičů" starts with "hasi")
+            return box.word.startsWith(qWord);
+        });
+    });
 
     console.log('Matching boxes found:', matchingBoxes.length, matchingBoxes);
 
