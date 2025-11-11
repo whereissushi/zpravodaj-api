@@ -1136,7 +1136,17 @@ $(document).ready(function() {
             turned: function(e, page) {
                 currentPageSpan.text(page);
                 updateThumbnails(page);
-                // Don't clear highlights here - let user clear them manually via search close
+
+                // Apply pending highlight if exists
+                if (window.pendingHighlight && window.pendingHighlight.page === page) {
+                    console.log('Applying pending highlight for page', page);
+                    // Use setTimeout to ensure page is fully rendered
+                    setTimeout(() => {
+                        highlightSearchOnPage(window.pendingHighlight.page, window.pendingHighlight.query);
+                        window.pendingHighlight = null; // Clear after use
+                    }, 300);
+                }
+
                 // Google Analytics
                 if (typeof gtag !== 'undefined') {
                     gtag('event', 'page_turn', {
@@ -1873,18 +1883,14 @@ function goToSearchResult(index) {
     $('.search-result-item').removeClass('active');
     $(`.search-result-item[data-result-index="${index}"]`).addClass('active');
 
-    // Go to the page
+    // Store page and query for highlighting after turn completes
+    window.pendingHighlight = {
+        page: result.page,
+        query: window.currentSearchQuery
+    };
+
+    // Go to the page - highlighting will happen in 'turned' event
     flipbook.turn('page', result.page);
-
-    // Clear any pending highlight timeouts
-    if (window.highlightTimeout) {
-        clearTimeout(window.highlightTimeout);
-    }
-
-    // Highlight search results on the page - wait for turn.js animation to complete
-    window.highlightTimeout = setTimeout(() => {
-        highlightSearchOnPage(result.page, window.currentSearchQuery);
-    }, 800);
 
     // Don't close search overlay - keep it open!
     // searchOverlay.hide(); // REMOVED
