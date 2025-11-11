@@ -1757,24 +1757,34 @@ function highlightSearchOnPage(pageNum, query) {
     // Clear existing highlights
     $('#highlight-overlay').empty();
 
+    console.log('highlightSearchOnPage called:', pageNum, query);
+
     if (!searchData || !searchData.positions || !query) {
+        console.log('Missing data:', { hasSearchData: !!searchData, hasPositions: !!searchData?.positions, query });
         return;
     }
 
-    const pageData = searchData.positions[pageNum];
+    const pageData = searchData.positions[String(pageNum)];
+    console.log('Page data:', pageData);
+
     if (!pageData || !pageData.boxes) {
+        console.log('No page data or boxes for page', pageNum);
         return;
     }
 
     const lowerQuery = query.toLowerCase();
     const queryWords = lowerQuery.split(/\\s+/);
+    console.log('Query words:', queryWords);
 
     // Find all matching words on the page
     const matchingBoxes = pageData.boxes.filter(box =>
         queryWords.some(qWord => box.word.includes(qWord) || qWord.includes(box.word))
     );
 
+    console.log('Matching boxes found:', matchingBoxes.length, matchingBoxes);
+
     if (matchingBoxes.length === 0) {
+        console.log('No matching boxes found');
         return;
     }
 
@@ -1789,11 +1799,14 @@ function highlightSearchOnPage(pageNum, query) {
 
     // Wait for page to render
     setTimeout(() => {
-        const pageElement = flipbook.turn('view').includes(pageNum)
-            ? $(`.page:has(img[src*="/${pageNum}.jpg"])`)
-            : null;
+        const currentView = flipbook.turn('view');
+        console.log('Current view:', currentView);
+
+        const pageElement = $(`.page:has(img[src*="/${pageNum}.jpg"])`);
+        console.log('Page element found:', pageElement.length);
 
         if (!pageElement || !pageElement.length) {
+            console.log('Page element not found');
             return;
         }
 
@@ -1803,26 +1816,44 @@ function highlightSearchOnPage(pageNum, query) {
         const displayWidth = img.width();
         const displayHeight = img.height();
 
+        console.log('Display dimensions:', displayWidth, 'x', displayHeight);
+        console.log('Original dimensions:', pageData.width, 'x', pageData.height);
+        console.log('Page offset:', pageOffset);
+        console.log('Viewer offset:', viewerOffset);
+
         // Calculate scale from original image size
         const scaleX = displayWidth / pageData.width;
         const scaleY = displayHeight / pageData.height;
+
+        console.log('Scale factors:', scaleX, scaleY);
 
         // Calculate position relative to viewer
         const relativeLeft = pageOffset.left - viewerOffset.left;
         const relativeTop = pageOffset.top - viewerOffset.top;
 
+        console.log('Relative position:', relativeLeft, relativeTop);
+
         // Draw highlight boxes
-        matchingBoxes.forEach(box => {
+        matchingBoxes.forEach((box, idx) => {
             const highlightBox = $('<div class="highlight-box"></div>');
+            const boxLeft = relativeLeft + box.x * scaleX;
+            const boxTop = relativeTop + box.y * scaleY;
+            const boxWidth = box.w * scaleX;
+            const boxHeight = box.h * scaleY;
+
+            console.log(`Box ${idx}:`, { word: box.word, left: boxLeft, top: boxTop, width: boxWidth, height: boxHeight });
+
             highlightBox.css({
-                left: (relativeLeft + box.x * scaleX) + 'px',
-                top: (relativeTop + box.y * scaleY) + 'px',
-                width: (box.w * scaleX) + 'px',
-                height: (box.h * scaleY) + 'px'
+                left: boxLeft + 'px',
+                top: boxTop + 'px',
+                width: boxWidth + 'px',
+                height: boxHeight + 'px'
             });
             $('#highlight-overlay').append(highlightBox);
         });
-    }, 300);
+
+        console.log('Total highlight boxes added:', matchingBoxes.length);
+    }, 500);
 }
 
 function goToSearchResult(index) {
