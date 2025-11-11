@@ -1811,7 +1811,7 @@ function highlightSearchOnPage(pageNum, query) {
         }
 
         const pageOffset = pageElement.offset();
-        const viewerOffset = $('#flipbook-viewer').offset();
+        const flipbookOffset = $('#flipbook').offset();
         const img = pageElement.find('img');
         const displayWidth = img.width();
         const displayHeight = img.height();
@@ -1819,7 +1819,7 @@ function highlightSearchOnPage(pageNum, query) {
         console.log('Display dimensions:', displayWidth, 'x', displayHeight);
         console.log('Original dimensions:', pageData.width, 'x', pageData.height);
         console.log('Page offset:', pageOffset);
-        console.log('Viewer offset:', viewerOffset);
+        console.log('Flipbook offset:', flipbookOffset);
 
         // Calculate scale from original image size
         const scaleX = displayWidth / pageData.width;
@@ -1827,9 +1827,9 @@ function highlightSearchOnPage(pageNum, query) {
 
         console.log('Scale factors:', scaleX, scaleY);
 
-        // Calculate position relative to viewer
-        const relativeLeft = pageOffset.left - viewerOffset.left;
-        const relativeTop = pageOffset.top - viewerOffset.top;
+        // Calculate position relative to flipbook container
+        const relativeLeft = pageOffset.left - flipbookOffset.left;
+        const relativeTop = pageOffset.top - flipbookOffset.top;
 
         console.log('Relative position:', relativeLeft, relativeTop);
 
