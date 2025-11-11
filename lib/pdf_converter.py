@@ -239,12 +239,12 @@ class PDFToFlipbook:
             </div>
         </div>
 
-        <div id="flipbook-viewer">
-            <div id="flipbook" style="position: relative;">
+        <div id="flipbook-viewer" style="position: relative;">
+            <div id="flipbook">
                 {''.join(f'<div class="page"><img src="files/pages/{i}.jpg" alt="Stránka {i}"></div>' for i in range(1, page_count + 1))}
-                <!-- Highlight overlay for search results -->
-                <div id="highlight-overlay"></div>
             </div>
+            <!-- Highlight overlay for search results - outside flipbook to avoid turn.js manipulation -->
+            <div id="highlight-overlay"></div>
         </div>
     </div>
 
@@ -717,11 +717,12 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
     z-index: 100;
-    /* Debug - should see this */
+    overflow: hidden;
+    /* Debug - uncomment to see overlay area */
     /* background: rgba(255, 0, 0, 0.1); */
 }
 
@@ -1815,7 +1816,7 @@ function highlightSearchOnPage(pageNum, query) {
 
         // Get bounding rectangles
         const pageRect = pageElement[0].getBoundingClientRect();
-        const flipbookRect = $('#flipbook')[0].getBoundingClientRect();
+        const viewerRect = $('#flipbook-viewer')[0].getBoundingClientRect();
 
         const img = pageElement.find('img');
         const displayWidth = img.width();
@@ -1824,7 +1825,7 @@ function highlightSearchOnPage(pageNum, query) {
         console.log('Display dimensions:', displayWidth, 'x', displayHeight);
         console.log('Original dimensions:', pageData.width, 'x', pageData.height);
         console.log('Page rect:', pageRect);
-        console.log('Flipbook rect:', flipbookRect);
+        console.log('Viewer rect:', viewerRect);
 
         // Calculate scale from original image size
         const scaleX = displayWidth / pageData.width;
@@ -1832,11 +1833,11 @@ function highlightSearchOnPage(pageNum, query) {
 
         console.log('Scale factors:', scaleX, scaleY);
 
-        // Calculate position relative to flipbook using getBoundingClientRect
-        const relativeLeft = pageRect.left - flipbookRect.left;
-        const relativeTop = pageRect.top - flipbookRect.top;
+        // Calculate position relative to viewer (where overlay is positioned)
+        const relativeLeft = pageRect.left - viewerRect.left;
+        const relativeTop = pageRect.top - viewerRect.top;
 
-        console.log('Calculated relative position:', relativeLeft, relativeTop);
+        console.log('Calculated relative position (to viewer):', relativeLeft, relativeTop);
 
         // Draw highlight boxes
         matchingBoxes.forEach((box, idx) => {
