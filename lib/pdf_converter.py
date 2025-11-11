@@ -648,6 +648,11 @@ body {
     background: #e0e0e0;
 }
 
+.search-result-item.active {
+    background: #d4e5f7;
+    border-left: 3px solid #2563a6;
+}
+
 .search-result-page {
     font-weight: bold;
     color: #2563a6;
@@ -1667,21 +1672,48 @@ function performSearch(query) {
     } else {
         searchResults.html(`
             <p>Nalezeno <strong>${results.length}</strong> výsledků:</p>
-            ${results.map(r => `
-                <div class="search-result-item" onclick="goToPage(${r.page})">
+            ${results.map((r, index) => `
+                <div class="search-result-item" data-result-index="${index}" data-page="${r.page}" onclick="goToSearchResult(${index})">
                     <div class="search-result-page">Stránka ${r.page}</div>
                     <div class="search-result-snippet">${r.snippet}</div>
                 </div>
             `).join('')}
         `);
     }
+
+    // Store results globally for navigation
+    window.currentSearchResults = results;
+    window.currentSearchResultIndex = -1;
 }
 
+function goToSearchResult(index) {
+    if (!window.currentSearchResults || index < 0 || index >= window.currentSearchResults.length) {
+        return;
+    }
+
+    const result = window.currentSearchResults[index];
+    window.currentSearchResultIndex = index;
+
+    // Highlight the selected result in search panel
+    $('.search-result-item').removeClass('active');
+    $(`.search-result-item[data-result-index="${index}"]`).addClass('active');
+
+    // Go to the page
+    flipbook.turn('page', result.page);
+
+    // Don't close search overlay - keep it open!
+    // searchOverlay.hide(); // REMOVED
+
+    // Optional: scroll the result into view in search panel
+    const selectedResult = $(`.search-result-item[data-result-index="${index}"]`)[0];
+    if (selectedResult) {
+        selectedResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+// Legacy function for compatibility
 function goToPage(page) {
     flipbook.turn('page', page);
-    searchOverlay.hide();
-    searchInput.val('');
-    searchResults.html('');
 }
 
 // Click on page to zoom or turn pages
