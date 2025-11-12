@@ -1106,12 +1106,12 @@ $(document).ready(function() {
     } else {
         // Scale based on viewport - better for all screen sizes
         if (viewportWidth <= 1920) {
-            // Smaller screens (1920x1080 and below)
-            bookWidth = Math.min(1600, viewportWidth * 0.95);
-            bookHeight = Math.min(950, viewportHeight * 0.95);
+            // Smaller screens (1920x1080 and below) - use smaller percentage to allow zoom
+            bookWidth = Math.min(1400, viewportWidth * 0.7);
+            bookHeight = Math.min(950, viewportHeight * 0.85);
         } else {
             // Larger screens (1440p and above)
-            bookWidth = Math.min(1400, viewportWidth * 0.7);
+            bookWidth = Math.min(1600, viewportWidth * 0.65);
             bookHeight = Math.min(990, viewportHeight * 0.85);
         }
     }
@@ -1181,10 +1181,10 @@ $(document).ready(function() {
             newBookHeight = Math.min(600, newViewportHeight * 0.8);
         } else {
             if (newViewportWidth <= 1920) {
-                newBookWidth = Math.min(1600, newViewportWidth * 0.95);
-                newBookHeight = Math.min(950, newViewportHeight * 0.95);
-            } else {
                 newBookWidth = Math.min(1400, newViewportWidth * 0.7);
+                newBookHeight = Math.min(950, newViewportHeight * 0.85);
+            } else {
+                newBookWidth = Math.min(1600, newViewportWidth * 0.65);
                 newBookHeight = Math.min(990, newViewportHeight * 0.85);
             }
         }
