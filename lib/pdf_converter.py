@@ -717,11 +717,13 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    right: 0;
+    bottom: 0;
+    width: auto !important;
+    height: auto !important;
     pointer-events: none;
     z-index: 100;
-    overflow: hidden;
+    overflow: visible;
     /* Debug - uncomment to see overlay area */
     /* background: rgba(255, 0, 0, 0.1); */
 }
