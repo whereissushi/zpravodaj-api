@@ -459,7 +459,7 @@ body {
 #flipbook .page img {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Changed from contain to cover to fill entire page */
+    object-fit: contain; /* Fit entire image without cropping */
     object-position: center;
     pointer-events: none;
     user-select: none;
