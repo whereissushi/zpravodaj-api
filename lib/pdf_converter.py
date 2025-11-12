@@ -1107,19 +1107,21 @@ $(document).ready(function() {
         // PDF page aspect ratio (A4 = 1:1.414, typical newsletter)
         const pageAspectRatio = 1.414;
 
-        // Scale based on viewport - better for all screen sizes
+        // Use available height to calculate optimal width for double-page spread
+        // This ensures pages fill the height without white margins
+        const availableHeight = viewportHeight * 0.9; // 90% of viewport height
+
+        // For double-page spread: total width = 2 * (height / aspect ratio)
+        const optimalWidth = 2 * (availableHeight / pageAspectRatio);
+
         if (viewportWidth <= 1920) {
-            // Smaller screens (1920x1080 and below) - use smaller percentage to allow zoom
-            // Double-page spread, so width is for 2 pages
-            const maxWidth = Math.min(1400, viewportWidth * 0.7);
-            bookWidth = maxWidth;
-            // Calculate height based on aspect ratio (single page width / 2)
-            bookHeight = Math.min(950, (maxWidth / 2) * pageAspectRatio);
+            // Smaller screens - ensure we don't exceed 70% viewport width
+            bookWidth = Math.min(optimalWidth, viewportWidth * 0.7, 1400);
+            bookHeight = availableHeight;
         } else {
-            // Larger screens (1440p and above)
-            const maxWidth = Math.min(1600, viewportWidth * 0.65);
-            bookWidth = maxWidth;
-            bookHeight = Math.min(990, (maxWidth / 2) * pageAspectRatio);
+            // Larger screens
+            bookWidth = Math.min(optimalWidth, viewportWidth * 0.7, 1600);
+            bookHeight = availableHeight;
         }
     }
 
@@ -1188,15 +1190,15 @@ $(document).ready(function() {
             newBookHeight = Math.min(600, newViewportHeight * 0.8);
         } else {
             const pageAspectRatio = 1.414;
+            const availableHeight = newViewportHeight * 0.9;
+            const optimalWidth = 2 * (availableHeight / pageAspectRatio);
 
             if (newViewportWidth <= 1920) {
-                const maxWidth = Math.min(1400, newViewportWidth * 0.7);
-                newBookWidth = maxWidth;
-                newBookHeight = Math.min(950, (maxWidth / 2) * pageAspectRatio);
+                newBookWidth = Math.min(optimalWidth, newViewportWidth * 0.7, 1400);
+                newBookHeight = availableHeight;
             } else {
-                const maxWidth = Math.min(1600, newViewportWidth * 0.65);
-                newBookWidth = maxWidth;
-                newBookHeight = Math.min(990, (maxWidth / 2) * pageAspectRatio);
+                newBookWidth = Math.min(optimalWidth, newViewportWidth * 0.7, 1600);
+                newBookHeight = availableHeight;
             }
         }
 
