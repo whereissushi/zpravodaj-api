@@ -167,6 +167,8 @@ This is normal - subsequent builds use cache and are faster (~2-3 minutes).
 ## Generated Flipbook Features
 
 The output HTML flipbook includes:
+- **Search with highlighting**: Full-text search with OCR, results stay visible, found words highlighted with yellow overlay boxes
+- **Click navigation**: Click right half of page to go forward, left half to go back
 - **Drag-to-flip**: Realistic page turning by dragging pages (turn.js)
 - **Zoom-to-click**: Click magnifying glass icon to enable zoom cursor, then click anywhere to zoom to that exact point
 - **Pan tool**: After zooming, use pan tool (hand icon) to drag the zoomed view in any direction
@@ -199,16 +201,55 @@ The zoom/pan system uses a **spacer div pattern** to create unlimited scrollable
 - "Scroll range" should match "Total container size" (if not, spacer isn't working)
 - "Actual scroll after set" should match "Calculated scroll" (if not, browser is clamping values)
 
+### Search & Highlighting Architecture
+
+The search feature extracts text from PDFs using **pytesseract OCR** with word-level bounding boxes:
+
+1. **OCR Extraction** (`_extract_text_ocr()` in `lib/pdf_converter.py`):
+   - Uses `pytesseract.image_to_data()` to get word positions (not just text)
+   - Stores each word's coordinates (x, y, width, height) normalized to original image dimensions
+   - Only keeps words with confidence > 30%
+   - Data structure: `{boxes: [{word, x, y, w, h}], width, height}` per page
+
+2. **Search Data Embedding**:
+   - OCR text and word positions embedded as JSON in `index.html`
+   - Format: `{pages: {pageNum: text}, positions: {pageNum: {boxes, width, height}}}`
+
+3. **Highlight Overlay** (`#highlight-overlay`):
+   - Positioned absolutely relative to `#flipbook-viewer` (sibling of `#flipbook`)
+   - Must use `right: 0; bottom: 0` with `width: auto !important` to prevent turn.js manipulation
+   - Turn.js will add `.turn-page` class if overlay is inside flipbook - must be outside!
+   - Z-index: 100 to appear above pages
+
+4. **Matching Logic** (`performSearch()` and `highlightSearchOnPage()`):
+   - Uses `word.startsWith(query)` to match words beginning with search term
+   - Skips single-letter matches unless query itself is single letter
+   - Calculates box positions: `getBoundingClientRect()` for page + viewer, then relative offset
+   - Scale factors: `displayWidth / originalWidth` and `displayHeight / originalHeight`
+
+**Critical constraints**:
+- Overlay must be **sibling** of flipbook, not child (turn.js treats children as pages)
+- Use `getBoundingClientRect()` not `offset()` for accurate positioning with transforms
+- Clear highlights in `turned` event only if not from search navigation
+- Responsive sizing: Calculate height from viewport (90%), then width from aspect ratio
+
+**Debugging search issues**:
+- Check "Matching boxes found: X" in console (should be > 0)
+- Verify overlay dimensions match viewer: width should be full viewport, not 944px
+- Check box positions: should be within viewer bounds (0 to viewerWidth)
+- If highlights invisible: check `overflow: visible` on overlay and z-index > turn.js pages
+
 ## Modifying Generated Flipbook
 
 All HTML/CSS/JS for the generated flipbook is embedded as Python strings in `lib/pdf_converter.py`:
 
 - **HTML structure**: `_generate_html()` method (lines ~80-150)
 - **CSS styling**: `_get_css()` method (lines ~160-360)
-- **JavaScript logic**: `_get_js()` method (lines ~960-1700+)
-  - Zoom functionality: `applyZoom()` function (lines ~1240-1450)
-  - Pan functionality: `enablePanning()` function (lines ~1520-1620)
-  - Zoom cursor mode: `activateZoomCursor()` function (lines ~210-280)
+- **JavaScript logic**: `_get_js()` method (lines ~960-2200+)
+  - Search: `performSearch()` and `highlightSearchOnPage()` functions
+  - Click navigation: `flipbook.on('click')` handler
+  - Zoom functionality: `applyZoom()` function
+  - Pan functionality: `enablePanning()` function
 
 **Critical**: When modifying these strings:
 1. Use triple-quoted strings (`'''`) for multiline content
@@ -259,7 +300,34 @@ When modifying zoom/pan or other flipbook UI features:
    - Test pan: After zooming, click pan tool (hand icon) and drag
    - Verify scroll range matches container size in console logs
 
+### Flipbook Responsive Sizing
+
+The flipbook dimensions are calculated to fit viewport while maintaining A4 aspect ratio (1:1.414):
+
+```javascript
+// Calculate from HEIGHT first (not width) to avoid white side margins
+const availableHeight = viewportHeight * 0.9;  // 90% of viewport
+const optimalWidth = 2 * (availableHeight / 1.414);  // For double-page spread
+
+// Then constrain by viewport width
+bookWidth = Math.min(optimalWidth, viewportWidth * 0.7);
+bookHeight = availableHeight;
+```
+
+**Why height-first calculation**:
+- Width-first creates letterboxing (white margins on sides)
+- Height-first with `object-fit: contain` ensures full page visible without cropping
+- Pages fill vertical space completely
+
+**Screen-specific sizing**:
+- FullHD (1920x1080): 70% viewport width, max 1400px
+- 1440p+ (>1920): 70% viewport width, max 1600px
+- Mobile (<768px): Single-page mode, 90% viewport
+
 **Common issues**:
+- White side margins: Width calculated incorrectly, use height-based formula above
+- Cropped content: Using `object-fit: cover` instead of `contain`
+- Can't zoom on FullHD: Flipbook too large (>70% viewport width)
 - If zoom doesn't center on click: Check "Scroll range" vs "Total container size" in console
 - If pan has boundaries: Check padding calculation (should be 200% of scaled dimensions)
 - If turn.js breaks: Make sure you're only using `transform: scale()` on flipbook container, not resizing page elements directly
